@@ -1,0 +1,454 @@
+<!DOCTYPE html>
+<html lang="hi"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>मेरा गाँव 3D – यादों वाला गाँव</title>
+<style>
+html,body{margin:0;height:100%;overflow:hidden;background:#000;font-family:system-ui,"Noto Sans Devanagari",sans-serif;touch-action:none;user-select:none;color:#fff}
+#c{position:fixed;inset:0;width:100%;height:100%;filter:sepia(.3) saturate(1.1) contrast(1.05)}
+#vig{position:fixed;inset:0;pointer-events:none;background:radial-gradient(ellipse at center,transparent 55%,rgba(30,15,0,.6))}
+#grain{position:fixed;inset:-50%;pointer-events:none;opacity:.1;background:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='200' height='200'><filter id='n'><feTurbulence baseFrequency='.9' numOctaves='2'/></filter><rect width='200' height='200' filter='url(%23n)'/></svg>");animation:gr .4s steps(4) infinite}
+@keyframes gr{25%{transform:translate(-3%,2%)}50%{transform:translate(2%,-3%)}75%{transform:translate(-2%,-2%)}}
+.off #c{filter:none}.off #vig,.off #grain{display:none}
+#hud{position:fixed;top:0;left:0;right:0;padding:calc(env(safe-area-inset-top,0px) + 8px) 10px 0;display:flex;justify-content:space-between;align-items:flex-start;gap:8px;text-shadow:0 1px 3px #000;font-weight:600;font-size:14px;pointer-events:none}
+#hud small{display:block;font-weight:400;opacity:.9;margin-top:2px}
+#btn{display:flex;flex-direction:column;gap:6px;align-items:flex-end;pointer-events:auto}
+#btn button,#btn label{background:rgba(40,24,8,.7);color:#fff;border:1px solid rgba(255,255,255,.4);border-radius:18px;padding:6px 12px;font-size:13px;cursor:pointer;font-family:inherit}
+#card{position:fixed;left:50%;top:calc(env(safe-area-inset-top,0px) + 100px);transform:translateX(-50%);width:min(92vw,420px);box-sizing:border-box;background:rgba(255,248,225,.96);color:#3b2a14;border-radius:14px;padding:10px 14px;box-shadow:0 4px 14px rgba(0,0,0,.35);display:none;pointer-events:none}
+#card b{font-size:17px}#card p{margin:4px 0 0;font-size:14px;line-height:1.45}
+#joy{position:fixed;left:calc(env(safe-area-inset-left,0px) + 22px);bottom:calc(env(safe-area-inset-bottom,0px) + 26px);width:120px;height:120px;border-radius:50%;background:rgba(255,255,255,.22);border:2px solid rgba(255,255,255,.6);display:none}
+#knob{position:absolute;left:35px;top:35px;width:50px;height:50px;border-radius:50%;background:rgba(255,255,255,.75)}
+@media (pointer:coarse){#joy{display:block}}
+#st{position:fixed;inset:0;background:radial-gradient(circle,#6b4423,#1d1006);display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:20px;z-index:9}
+#st h1{font-size:44px;margin:0;color:#ffd98a;text-shadow:0 3px 8px #000}#st p{max-width:340px;line-height:1.6;opacity:.92}
+#go{margin-top:14px;font-size:18px;padding:12px 28px;border-radius:30px;border:0;background:#ffb347;color:#3b2a14;font-weight:700;cursor:pointer;font-family:inherit}
+#sb{position:fixed;right:calc(env(safe-area-inset-right,0px) + 20px);bottom:calc(env(safe-area-inset-bottom,0px) + 40px);display:none;background:rgba(255,179,71,.95);color:#3b2a14;font-weight:700;border:0;border-radius:26px;padding:12px 20px;font-size:15px;font-family:inherit;cursor:pointer;box-shadow:0 3px 10px rgba(0,0,0,.4)}
+#ab{position:fixed;right:calc(env(safe-area-inset-right,0px) + 20px);bottom:calc(env(safe-area-inset-bottom,0px) + 96px);display:none;background:#8fdc9a;color:#17331c;font-weight:700;border:0;border-radius:26px;padding:12px 20px;font-size:15px;font-family:inherit;cursor:pointer;box-shadow:0 3px 10px rgba(0,0,0,.4)}
+#toast{position:fixed;left:50%;bottom:calc(env(safe-area-inset-bottom,0px) + 150px);transform:translateX(-50%);background:rgba(20,10,0,.85);color:#ffe9b8;padding:10px 18px;border-radius:20px;opacity:0;transition:opacity .4s;pointer-events:none;font-size:15px;text-align:center;max-width:90vw}
+#shop{position:fixed;left:50%;top:50%;transform:translate(-50%,-50%);width:min(92vw,380px);box-sizing:border-box;background:#fff8e1;color:#3b2a14;border-radius:16px;padding:14px;display:none;box-shadow:0 6px 24px rgba(0,0,0,.5);z-index:8}
+#shop button{margin:4px;padding:8px 10px;border-radius:10px;border:1px solid #c9a96a;background:#ffeab5;font-size:14px;font-family:inherit;cursor:pointer}
+#mm{position:fixed;right:10px;top:calc(env(safe-area-inset-top,0px) + 244px);width:130px;border:2px solid #fff;border-radius:8px;background:#6fae4f;opacity:.93;cursor:pointer;z-index:5}#mm.big{width:300px}
+#fade{position:fixed;inset:0;background:#000;opacity:0;pointer-events:none;transition:opacity .8s;z-index:7}
+</style></head><body>
+<canvas id="c"></canvas><div id="vig"></div><div id="grain"></div>
+<div id="hud"><div>🏡 मेरा गाँव 3D<small id="cnt"></small><small id="wl"></small><small>WASD / तीर • माउस खींचकर घूमें • Shift = दौड़ • E = बैठें/उठें • F = क्रिया</small></div>
+<div id="btn"><button id="tm"></button><button id="wb">🌦️ मौसम</button><button id="fl">📽️ पुराना फ़िल्टर</button><button id="cr">🎆 पटाखे</button><button id="mu">🔊 आवाज़</button><label>🎵 अपने पुराने गाने<input id="fi" type="file" accept="audio/*" multiple hidden></label></div></div>
+<div id="card"><b id="ct"></b><p id="cp"></p></div>
+<div id="joy"><div id="knob"></div></div><button id="sb"></button><button id="ab"></button><div id="toast"></div><div id="shop"></div><div id="fade"></div><canvas id="mm" width="130" height="105"></canvas>
+<div id="st"><h1>मेरा गाँव</h1><p>यादों वाला गाँव — शाम की सुनहरी धूप, रेडियो पर पुराने नग़मे, बरगद के नीचे बुज़ुर्गों की चौपाल। हेडफ़ोन लगाइए, आवाज़ पास जाने पर तेज़ होती है।</p><button id="go">▶ गाँव में चलिए</button></div>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script>
+const $=i=>document.getElementById(i),T=THREE,PI=Math.PI,rn=(a,b)=>a+Math.random()*(b-a),wx=x=>x-120,wz=y=>y-95;
+const ren=new T.WebGLRenderer({canvas:$('c'),antialias:true});ren.setPixelRatio(Math.min(devicePixelRatio,2));ren.shadowMap.enabled=true;
+const sc=new T.Scene(),cam=new T.PerspectiveCamera(62,1,.1,500);sc.fog=new T.Fog('#e9a46e',40,220);
+function rs(){ren.setSize(innerWidth,innerHeight,false);cam.aspect=innerWidth/innerHeight;cam.updateProjectionMatrix()}onresize=rs;rs();
+// ---- बनावट (textures)
+function tex(f,rep){const c=document.createElement('canvas');c.width=c.height=128;f(c.getContext('2d'));const t=new T.CanvasTexture(c);t.wrapS=t.wrapT=T.RepeatWrapping;t.repeat.set(rep,rep);t.anisotropy=4;return t}
+const spk=(x,cols,n,s)=>{for(let i=0;i<n;i++){x.fillStyle=cols[i%cols.length];x.fillRect(Math.random()*128,Math.random()*128,s,s)}};
+const tGrass=tex(x=>{x.fillStyle='#5d9a3c';x.fillRect(0,0,128,128);spk(x,['#4f8a33','#6cab47','#7bb852','#477d2e'],900,2)},70);
+const tDirt=tex(x=>{x.fillStyle='#a58a5e';x.fillRect(0,0,128,128);spk(x,['#8f7550','#b79c70','#7d6644'],700,2)},8);
+const tWall=tex(x=>{x.fillStyle='#fff';x.fillRect(0,0,128,128);spk(x,['#e9e2d2','#f4efe3','#d9d0bc'],900,3)},2);
+const tTile=tex(x=>{x.fillStyle='#a8452c';x.fillRect(0,0,128,128);x.strokeStyle='#6e2a1a';x.lineWidth=3;for(let i=0;i<128;i+=16){x.beginPath();x.moveTo(0,i);x.lineTo(128,i);x.stroke()}},3);
+const tWater=tex(x=>{x.fillStyle='#2f7fb8';x.fillRect(0,0,128,128);x.strokeStyle='rgba(255,255,255,.35)';x.lineWidth=2;for(let i=0;i<14;i++){const y=rn(0,128),a=rn(0,128);x.beginPath();x.moveTo(a,y);x.lineTo(a+30,y);x.stroke()}},1);tWater.repeat.set(30,2);
+const M={},mat=(c,m,r=.9)=>M[c+(m?m.uuid:'')]||(M[c+(m?m.uuid:'')]=new T.MeshStandardMaterial({color:c,map:m||null,roughness:r}));
+const mesh=(geo,mt,x,y,z,p)=>{const m=new T.Mesh(geo,mt);m.castShadow=m.receiveShadow=true;m.position.set(x,y,z);(p||sc).add(m);return m};
+const col=[],cir=[];
+function B(x,y,w,d,h,c,m,solid=1){if(solid)col.push([wx(x),wz(y),w,d]);return mesh(new T.BoxGeometry(w,h,d),mat(c,m),wx(x+w/2),h/2,wz(y+d/2))}
+function flat(w,d,x,z,mt,y=.03){const m=new T.Mesh(new T.PlaneGeometry(w,d),mt);m.rotation.x=-PI/2;m.position.set(x,y,z);m.receiveShadow=true;sc.add(m);return m}
+// ---- ज़मीन, सड़कें, नदी
+const gr=new T.Mesh(new T.PlaneGeometry(300,260),new T.MeshStandardMaterial({map:tGrass,roughness:1}));gr.rotation.x=-PI/2;gr.receiveShadow=true;sc.add(gr);
+const dirtM=new T.MeshStandardMaterial({map:tDirt,roughness:1});
+flat(240,8,0,wz(68),dirtM);flat(8,58,8,wz(101),dirtM);flat(8,50,8,wz(165),dirtM);
+const chw=flat(34,34,8,wz(68),new T.MeshStandardMaterial({color:'#c9b27f',roughness:1}),.035);chw.geometry=new T.CircleGeometry(17,32);
+flat(36,21,wx(188),wz(52.5),new T.MeshStandardMaterial({color:'#d8c58a',roughness:1}),.04);
+const wm=new T.MeshStandardMaterial({map:tWater,roughness:.25,metalness:.1,transparent:true,opacity:.9});
+flat(300,10,0,wz(135),wm,.08);flat(300,1.6,0,wz(129.2),dirtM,.05);flat(300,1.6,0,wz(140.8),dirtM,.05);
+mesh(new T.BoxGeometry(9,.12,12),mat('#8b5a2b',tDirt),8,.06,40);
+for(const s of[-1,1])mesh(new T.BoxGeometry(.2,.9,12),mat('#6b4423'),8+s*4.3,.5,40);
+// ---- आसमान और रोशनी
+const sky=new T.Mesh(new T.SphereGeometry(400,24,12),new T.ShaderMaterial({side:T.BackSide,depthWrite:false,fog:false,uniforms:{t:{value:new T.Color()},b:{value:new T.Color()}},vertexShader:'varying vec3 p;void main(){p=position;gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.);}',fragmentShader:'uniform vec3 t,b;varying vec3 p;void main(){gl_FragColor=vec4(mix(b,t,smoothstep(0.,.55,normalize(p).y)),1.);}'}));sc.add(sky);
+const hemi=new T.HemisphereLight('#bbccdd','#6a5a3a',.6),sun=new T.DirectionalLight('#ffb066',1.8),sd=new T.Vector3();
+sun.castShadow=true;sun.shadow.mapSize.set(2048,2048);const shc=sun.shadow.camera;shc.left=shc.bottom=-45;shc.right=shc.top=45;shc.far=200;sc.add(hemi,sun,sun.target);
+const sunM=new T.Mesh(new T.SphereGeometry(10,12,8),new T.MeshBasicMaterial({color:'#ffe0a0',fog:false}));sc.add(sunM);
+const lampM=new T.MeshStandardMaterial({color:'#ffe9a8',emissive:'#ffcc55',emissiveIntensity:.5});
+const PS=[{n:'सुबह',t:'#6fa8dc',b:'#fbe3c0',f:'#f3d9b6',s:'#ffd9a0',si:1.6,hi:.7,d:[-.8,.4,.5],l:0},{n:'शाम',t:'#3a5a96',b:'#f6a561',f:'#e9a46e',s:'#ff9d57',si:1.9,hi:.55,d:[.8,.22,-.4],l:.6},{n:'रात',t:'#050a1c',b:'#1d2a4a',f:'#10182e',s:'#8fa8e0',si:.45,hi:.3,d:[.3,.7,.3],l:2.5}];
+let ti=1;
+// ---- इंसान
+function human(sh_,pa,o={}){const g=new T.Group(),skn=mat(o.sk||'#a9744a');
+ const add=(geo,mt,x,y,z,p)=>{const m=new T.Mesh(geo,mt);m.position.set(x,y,z);(p||g).add(m);return m};
+ add(new T.CylinderGeometry(.26,.3,.75,10),mat(sh_),0,1.3,0);
+ if(o.f)add(new T.CylinderGeometry(.3,.5,.95,10),mat(pa),0,.55,0);
+ add(new T.SphereGeometry(.21,12,10),skn,0,1.88,0);
+ add(o.tb?new T.SphereGeometry(.25,10,8):new T.SphereGeometry(.22,10,6,0,PI*2,0,PI/2),mat(o.cp||'#222'),0,o.tb?1.97:1.92,0);
+ for(const s of[-1,1])add(new T.SphereGeometry(.03,6,6),mat('#111'),s*.08,1.9,.19);
+ if(o.bd)add(new T.SphereGeometry(.14,8,8),mat('#f2f2f2'),0,1.76,.1);
+ const lg=[],ar=[];
+ for(const s of[-1,1]){const l=new T.Group();l.position.set(s*.13,.9,0);g.add(l);if(!o.f)add(new T.CylinderGeometry(.1,.09,.9,8),mat(pa),0,-.45,0,l);add(new T.SphereGeometry(.1,6,6),skn,0,-.88,.04,l);lg.push(l);
+  const a=new T.Group();a.position.set(s*.36,1.6,0);g.add(a);add(new T.CylinderGeometry(.07,.07,.6,6),mat(sh_),0,-.3,0,a);add(new T.SphereGeometry(.07,6,6),skn,0,-.62,0,a);ar.push(a)}
+ g.userData={lg,ar};g.scale.setScalar(o.s||1);g.traverse(m=>m.castShadow=true);return g}
+function cow(c='#f1e8d8',s=1){const g=new T.Group(),add=(geo,mt,x,y,z)=>{const m=new T.Mesh(geo,mt);m.position.set(x,y,z);m.castShadow=true;g.add(m)};
+ add(new T.BoxGeometry(.8,.8,1.8),mat(c),0,1.1,0);add(new T.BoxGeometry(.4,.45,.5),mat(c),0,1.35,1.1);add(new T.BoxGeometry(.3,.2,.2),mat('#d9a7a0'),0,1.22,1.4);add(new T.BoxGeometry(.82,.4,.6),mat('#6b4a2e'),0,1.25,-.2);
+ for(const[x,z]of[[-.28,.7],[.28,.7],[-.28,-.7],[.28,-.7]])add(new T.BoxGeometry(.18,.8,.18),mat(c),x,.4,z);
+ for(const x of[-.15,.15])add(new T.ConeGeometry(.05,.25,5),mat('#ddd'),x,1.65,1.05);g.scale.setScalar(s);return g}
+function hen(){const g=new T.Group(),add=(geo,mt,x,y,z)=>{const m=new T.Mesh(geo,mt);m.position.set(x,y,z);g.add(m)};add(new T.BoxGeometry(.25,.25,.4),mat('#b5651d'),0,.3,0);add(new T.SphereGeometry(.09,6,6),mat('#b5651d'),0,.5,.2);add(new T.BoxGeometry(.03,.07,.1),mat('#d22'),0,.6,.2);return g}
+const NP=[];function npc(g,x,z,r,sp=1.1){g.position.set(x,0,z);sc.add(g);NP.push({g,hx:x,hz:z,r,sp,tx:x,tz:z,w:0,ph:rn(0,6)})}
+function walk(g,t,k){const u=g.userData;if(u.lg){u.lg[0].rotation.x=Math.sin(t)*.7*k;u.lg[1].rotation.x=-Math.sin(t)*.7*k;u.ar[0].rotation.x=-Math.sin(t)*.5*k;u.ar[1].rotation.x=Math.sin(t)*.5*k}}
+// ---- छोटे सामान
+function label(txt,x,y,z){const c=document.createElement('canvas');c.width=256;c.height=64;const x2=c.getContext('2d');x2.fillStyle='rgba(40,24,8,.7)';x2.fillRect(2,6,252,52);x2.fillStyle='#fff';x2.font='bold 28px system-ui,sans-serif';x2.textAlign='center';x2.textBaseline='middle';x2.fillText(txt,128,33,240);
+ const s=new T.Sprite(new T.SpriteMaterial({map:new T.CanvasTexture(c),depthWrite:false,fog:false}));s.scale.set(8,2,1);s.position.set(x,y,z);sc.add(s);return s}
+function emo(e,sz){const c=document.createElement('canvas');c.width=c.height=64;const x=c.getContext('2d');x.font='48px serif';x.textAlign='center';x.textBaseline='middle';x.fillText(e,32,36);const s=new T.Sprite(new T.SpriteMaterial({map:new T.CanvasTexture(c),transparent:true,fog:false}));s.scale.set(sz,sz,1);sc.add(s);return s}
+const spots=[];
+function charpai(x,z,face=PI/2){spots.push({x,z,y:.62,face,n:'चारपाई'});mesh(new T.BoxGeometry(2.2,.12,1.2),mat('#b3874f'),x,.55,z);for(const a of[-1,1])for(const b of[-1,1])mesh(new T.BoxGeometry(.1,.5,.1),mat('#5a3a22'),x+a*1,.25,z+b*.5)}
+function lamp(x,y){const X=wx(x),Z=wz(y);mesh(new T.CylinderGeometry(.08,.1,4.5,6),mat('#333'),X,2.25,Z);mesh(new T.SphereGeometry(.3,8,8),lampM,X,4.6,Z).castShadow=false}
+function house(x,y,w,d,c,f=1){B(x,y,w,d,3.2,c,tWall);const r=new T.Mesh(new T.ConeGeometry(.85*w,2.2,4),mat('#a8452c',tTile));r.geometry.rotateY(PI/4);r.scale.z=d/w;r.position.set(wx(x+w/2),4.3,wz(y+d/2));r.castShadow=true;sc.add(r);
+ const z=f>0?wz(y+d)+.06:wz(y)-.06;mesh(new T.BoxGeometry(1,2,.1),mat('#5a3a22'),wx(x+w/2),1,z);mesh(new T.BoxGeometry(1.2,.9,.1),mat('#3b4a5a'),wx(x+w*.2),2,z);mesh(new T.BoxGeometry(1.2,.9,.1),mat('#3b4a5a'),wx(x+w*.8),2,z);
+ charpai(wx(x+w+1.8),z+f*1.2);mesh(new T.SphereGeometry(.4,8,8),mat('#b5533c'),wx(x-.8),.4,z+f*.5)}
+function shop(x,y,w,d,c,aw,f){B(x,y,w,d,3.6,c,tWall);B(x-.5,y-.5,w+1,d+1,.3,'#6e5a44',0,0).position.y=3.75;const z=wz(f>0?y+d:y);
+ for(let i=0;i<w;i++){const a=mesh(new T.BoxGeometry(1,.12,2.4),mat(i%2?aw:'#f6f1e4'),wx(x)+i+.5,3.1,z+f*1.2);a.rotation.x=f*.3}
+ mesh(new T.BoxGeometry(w-3,1,.8),mat('#7a5230'),wx(x+w/2),.5,z+f*.6);
+ for(let i=0;i<4;i++)mesh(new T.BoxGeometry(.7,.5,.5),mat(['#c33','#3a7','#e9b','#37c'][i]),wx(x+w/2)-1.5+i,1.25,z+f*.6)}
+function radio(x,z){mesh(new T.BoxGeometry(1.4,.8,.6),mat('#7a5230'),x,1.4,z);mesh(new T.BoxGeometry(.9,.9,.5),mat('#6b3f1d'),x,1.95,z+.1);mesh(new T.CircleGeometry(.28,12),mat('#222'),x-.2,1.95,z+.37);mesh(new T.CylinderGeometry(.02,.02,1,4),mat('#bbb'),x+.35,2.9,z).rotation.z=-.3;mesh(new T.SphereGeometry(.07,6,6),mat('#d22'),x+.25,2.2,z+.37)}
+function tree(x,z,s){const g=new T.Group();mesh(new T.CylinderGeometry(.18*s,.28*s,2.4*s,6),mat('#5a3d22'),0,1.2*s,0,g);for(let i=0;i<3;i++)mesh(new T.IcosahedronGeometry((1.6-i*.2)*s,0),new T.MeshStandardMaterial({color:new T.Color().setHSL(rn(.25,.33),.5,rn(.25,.35)),flatShading:true}),rn(-.5,.5)*s,(3+i*.9)*s,rn(-.5,.5)*s,g);g.position.set(x,0,z);sc.add(g);cir.push([x,z,.5*s])}
+// ---- गाँव की इमारतें
+const hn=['शर्मा जी','वर्मा जी','यादव जी','खान चाचा','पटेल जी','सिंह साहब','कुम्हार भैया','नानी'],hc=['#f4d9b5','#cfe3c0','#f0c9c9','#d9d4ee','#f7e7a8','#c6e2e9','#e8cba7','#f3c6a5'];
+hn.forEach((n,i)=>house(10+(i%4)*20,i<4?15:80,15,12,hc[i],i<4?1:-1));
+// पंचायत भवन
+B(112,42,32,13,5,'#e6d3a8',tWall);B(111,41,34,15,.4,'#8a6b45',0,0).position.y=5.2;mesh(new T.SphereGeometry(2,12,8,0,PI*2,0,PI/2),mat('#f0e6c8'),wx(128),5.4,wz(48.5));
+for(let i=0;i<7;i++)mesh(new T.CylinderGeometry(.3,.3,4,8),mat('#fff'),wx(113)+i*4.9,2,wz(56));
+// शिव मंदिर
+B(90,16,14,17,.6,'#cfc4b0');B(93,19,8,8,4.5,'#f3e3c4',tWall);let my=5.1;[[3.6,2.2],[2.6,2],[1.6,1.8]].forEach(([r,h])=>{mesh(new T.ConeGeometry(r,h*1.4,4),mat('#e8a24a'),wx(97),my+h*.5,wz(23)).rotation.y=PI/4;my+=h*.9});
+mesh(new T.SphereGeometry(.4,8,8),mat('#d4a017'),wx(97),my+.8,wz(23));mesh(new T.CylinderGeometry(.04,.04,2.2,4),mat('#ccc'),wx(97),my+2,wz(23));mesh(new T.BoxGeometry(1.1,.6,.05),mat('#e8661a'),wx(97)+.6,my+2.6,wz(23));
+// पाठशाला
+B(170,20,28,15,4.2,'#f1d9a8',tWall);B(169,19,30,17,.4,'#7a5a3a',0,0).position.y=4.4;
+for(let i=0;i<6;i++)mesh(new T.CylinderGeometry(.25,.25,3.6,8),mat('#fff'),wx(171)+i*5.2,1.8,wz(36));
+mesh(new T.CylinderGeometry(.08,.08,9,6),mat('#ddd'),wx(200),4.5,wz(38));[['#ff9933',8.6],['#ffffff',8.1],['#138808',7.6]].forEach(([c,y])=>mesh(new T.BoxGeometry(1.3,.5,.04),mat(c),wx(200)+.7,y,wz(38)));
+// दुकानें
+shop(48,44,20,12,'#f0c36a','#c0392b',1);shop(72,44,22,12,'#e88b6a','#2a7f62',1);shop(102,76,10,8,'#b98b5e','#d8a020',-1);shop(142,76,15,9,'#f09bb0','#7a3fa0',-1);
+mesh(new T.CylinderGeometry(.3,.3,.5,8),mat('#bbbbbb',0,.3),wx(106),1.4,wz(80));
+for(const x of[104,108])mesh(new T.BoxGeometry(2.4,.4,.7),mat('#6b4423'),wx(x),.5,wz(75));
+const RX=[[wx(58),wz(57.5)],[wx(107),wz(74.6)],[75+1.4,-7+1.4]];radio(RX[0][0],RX[0][1]);radio(RX[1][0],RX[1][1]);
+// बस स्टैंड
+B(20,105,26,11,.2,'#8d8d8d',0,0);for(const x of[21,44])for(const y of[106,115])mesh(new T.CylinderGeometry(.15,.15,3.2,6),mat('#555'),wx(x),1.6,wz(y));B(19,104,28,13,.3,'#4a6a8a',0,0).position.y=3.3;B(24,114,10,1.2,.5,'#7a5230',0,0);
+B(30,98,10,3,3,'#2d6fb7',0,1);B(30,98,10,3.05,.5,'#f0a030',0,0).position.y=1;B(30.2,98,9.6,3.1,.9,'#222222',0,0).position.y=2.2;for(const x of[32,38])for(const s of[0,3])mesh(new T.CylinderGeometry(.5,.5,.3,12),mat('#111'),wx(x),.5,wz(98+s)).rotation.x=PI/2;
+// कुआँ, किसान का घर, गौशाला, बैलगाड़ी
+const WX=wx(137.5),WZ=wz(153.5);col.push([WX-2.5,WZ-2.5,5,5]);mesh(new T.CylinderGeometry(2,2.2,1.2,16),mat('#8d8d8d'),WX,.6,WZ);mesh(new T.CylinderGeometry(1.5,1.5,.1,16),mat('#1a3a4a'),WX,1.1,WZ);for(const s of[-1,1])mesh(new T.BoxGeometry(.2,3,.2),mat('#5a3a22'),WX+s*1.8,2.2,WZ);mesh(new T.BoxGeometry(4,.2,.2),mat('#5a3a22'),WX,3.6,WZ);
+house(148,148,17,11,'#e6c9a0');for(const[a,b]of[[168,148],[170,152]])mesh(new T.ConeGeometry(1.6,2.6,8),mat('#d6b45a'),wx(a),1.3,wz(b));
+B(175,147,26,15,.1,'#8a7a55',0,0);for(const x of[176,199])for(const y of[148,160])mesh(new T.CylinderGeometry(.2,.2,3,6),mat('#5a3a22'),wx(x),1.5,wz(y));B(174,146,28,17,.3,'#9a8348',0,0).position.y=3.1;
+const CX=wx(188),CZ=wz(138);mesh(new T.BoxGeometry(3.2,.2,1.9),mat('#7a5230'),CX,1.1,CZ);for(const s of[-1,1])mesh(new T.TorusGeometry(.8,.1,6,14),mat('#4a3018'),CX,.9,CZ+s*1.1);
+const bl=cow('#8a6a4a',1);bl.position.set(CX+4,0,CZ);bl.rotation.y=PI/2;sc.add(bl);mesh(new T.BoxGeometry(3,.1,.1),mat('#5a3a22'),CX+2,1.2,CZ);
+// खेत और बिजूका
+[[10,'#d9b94a'],[70,'#f0d020']].forEach(([x,c])=>{flat(50,28,wx(x+25),wz(159),new T.MeshStandardMaterial({color:'#6e4a2c',roughness:1}),.03);for(let i=0;i<12;i++)mesh(new T.BoxGeometry(46,rn(.7,1.1),.9),mat(c),wx(x+25),.45,wz(146.5)+i*2.15);
+ mesh(new T.CylinderGeometry(.06,.06,2.8,5),mat('#5a3a22'),wx(x+25),1.4,wz(159));mesh(new T.BoxGeometry(2.4,.08,.08),mat('#5a3a22'),wx(x+25),2.2,wz(159));mesh(new T.SphereGeometry(.3,8,8),mat('#8b3a2b'),wx(x+25),2.9,wz(159));mesh(new T.ConeGeometry(.5,.4,8),mat('#d6b45a'),wx(x+25),3.3,wz(159))});
+// बड़ा बरगद + चौपाल + ग्रामोफ़ोन
+const BX=75,BZ=-7;mesh(new T.CylinderGeometry(6,6.2,.9,24),mat('#b9ab95'),BX,.45,BZ);col.push([BX-1.4,BZ-1.4,2.8,2.8]);
+mesh(new T.CylinderGeometry(1,1.5,7,10),mat('#5a4028'),BX,3.5,BZ);for(const[a,b,c,r]of[[0,10,0,6],[-5,8.5,2,4.5],[5,8.5,-2,4.5],[2,9,5,4.5],[-3,9,-5,4.5],[6,8,4,3.5]])mesh(new T.IcosahedronGeometry(r,1),new T.MeshStandardMaterial({color:'#2f6f2e',flatShading:true}),BX+a,b,BZ+c);
+for(let i=0;i<24;i++){const a=rn(0,6.28),r=rn(2,7);mesh(new T.CylinderGeometry(.04,.06,rn(3,6),4),mat('#4a3520'),BX+Math.cos(a)*r,5,BZ+Math.sin(a)*r)}
+[[0,'#f5f0e6'],[1.3,'#e9e2cf'],[2.5,'#f0e8d4'],[4,'#efe6d0']].forEach(([a,c],i)=>{const e=human(c,'#ece6d6',{tb:i%2==0,cp:i%2?'#f5f5f5':'#e0e0e0',bd:1,sk:'#9a6a44'});const r=4.2;e.position.set(BX+Math.sin(a+1.6)*r,.15,BZ+Math.cos(a+1.6)*r);e.rotation.y=a+1.6+PI;e.userData.lg.forEach(l=>l.rotation.x=-1.45);sc.add(e)});
+mesh(new T.BoxGeometry(1,.5,1),mat('#6b4423'),RX[2][0],1.15,RX[2][1]);const disc=mesh(new T.CylinderGeometry(.4,.4,.05,16),mat('#111'),RX[2][0],1.42,RX[2][1]);const horn=mesh(new T.ConeGeometry(.7,1.2,16,1,true),new T.MeshStandardMaterial({color:'#d4a017',metalness:.7,roughness:.3,side:T.DoubleSide}),RX[2][0]+.4,2.2,RX[2][1]);horn.rotation.z=-PI/2.4;
+charpai(BX-8.5,BZ+3);spots.push({x:BX+Math.sin(.4)*4.2,z:BZ+Math.cos(.4)*4.2,y:.9,face:.4+PI,n:'बरगद के चबूतरे'});mesh(new T.SphereGeometry(.45,8,8),mat('#b5533c'),BX+3,1.3,BZ-3.5);
+// खेल का मैदान: झूले
+const SW=[];[0,9].forEach(o=>{const X=wx(176+o),Z=wz(50);for(const s of[-1,1])for(const t of[-1,1]){const p=mesh(new T.CylinderGeometry(.08,.08,4,6),mat('#555'),X+s*1.5,2,Z+t*.8);p.rotation.z=s*.15}mesh(new T.CylinderGeometry(.08,.08,3.4,6),mat('#555'),X,3.9,Z).rotation.z=PI/2;
+ const g=new T.Group();g.position.set(X,3.9,Z);sc.add(g);mesh(new T.BoxGeometry(.9,.1,.5),mat('#a0522d'),0,-2.9,0,g);for(const s of[-.4,.4])mesh(new T.CylinderGeometry(.02,.02,2.9,4),mat('#999'),s,-1.45,0,g);SW.push(g)});
+// पतंगें और बादल
+const KT=[];['#e63946','#f4a261','#2a9d8f','#e9c46a','#9b5de5'].forEach((c,i)=>{const k=mesh(new T.PlaneGeometry(1.6,1.6),new T.MeshBasicMaterial({color:c,side:T.DoubleSide,fog:false}),wx(150+i*14),rn(24,34),wz(30+i*6));k.rotation.z=PI/4;k.castShadow=false;KT.push(k)});
+for(let i=0;i<7;i++){const c=mesh(new T.SphereGeometry(rn(8,14),8,6),new T.MeshBasicMaterial({color:'#ffffff',transparent:true,opacity:.55,fog:false}),rn(-150,150),rn(55,75),rn(-150,100));c.scale.y=.35;c.castShadow=false}
+for(const[a,b]of[[100,63],[150,63],[60,73],[180,73],[128,60],[128,76]])lamp(a,b);
+// ---- मेरा घर (अंदर जा सकते हैं): x -24..0, z 3..21
+function wl(x,z,w,d){col.push([x,z,w,d]);return mesh(new T.BoxGeometry(w,3.4,d),mat('#efe2c4',tWall),x+w/2,1.7,z+d/2)}
+wl(-24,3,.4,18);wl(-.4,3,.4,18);wl(-24,20.6,24,.4);wl(-24,3,10.5,.4);wl(-10.5,3,10.5,.4);
+flat(24,18,-12,12,new T.MeshStandardMaterial({color:'#b48a5a',roughness:.8}),.06);
+for(const x of[-13.5,-10.5])mesh(new T.BoxGeometry(.3,3.4,.3),mat('#5a3a22'),x,1.7,3.2);mesh(new T.BoxGeometry(3.3,.3,.3),mat('#5a3a22'),-12,3.4,3.2);
+const hRoof=new T.Mesh(new T.ConeGeometry(.85*24,3,4),mat('#a8452c',tTile));hRoof.geometry.rotateY(PI/4);hRoof.scale.z=18/24;hRoof.position.set(-12,4.9,12);hRoof.castShadow=true;sc.add(hRoof);
+const tvc=document.createElement('canvas');tvc.width=160;tvc.height=120;const tvx=tvc.getContext('2d'),tvt=new T.CanvasTexture(tvc);let wasIn=null;
+function drawTV(t,on){const x=tvx;if(!on){x.fillStyle='#0a0f0a';x.fillRect(0,0,160,120)}else{['#ccc','#cc0','#0cc','#0c0','#c0c','#c00','#00c'].forEach((c,i)=>{x.fillStyle=c;x.fillRect(i*23,0,23,80)});x.fillStyle='#111';x.fillRect(0,80,160,40);x.fillStyle='#fff';x.font='bold 16px sans-serif';x.textAlign='center';x.fillText(['दूरदर्शन','चित्रहार ♪','समाचार'][Math.floor(t/6)%3],80,106);
+ for(let i=0;i<120;i++){x.fillStyle='rgba(255,255,255,'+Math.random()*.35+')';x.fillRect(Math.random()*160,Math.random()*120,2,1)}x.fillStyle='rgba(0,0,0,.25)';x.fillRect(0,(t*40)%120,160,6)}tvt.needsUpdate=true}
+mesh(new T.BoxGeometry(1.6,.8,1.4),mat('#6b4423'),-1.6,.4,12);mesh(new T.BoxGeometry(1.2,1,1.3),mat('#5a3a22'),-1.6,1.3,12);
+const scr=new T.Mesh(new T.PlaneGeometry(.9,.7),new T.MeshBasicMaterial({map:tvt}));scr.rotation.y=-PI/2;scr.position.set(-2.22,1.35,12);sc.add(scr);
+for(const s of[-1,1])mesh(new T.CylinderGeometry(.02,.02,1.2,4),mat('#bbbbbb'),-1.6,2.4,12+s*.3).rotation.x=s*.5;
+charpai(-7,12,PI/2);charpai(-19,17,PI/2);
+mesh(new T.CylinderGeometry(.6,.7,.7,10),mat('#8a5a3a'),-21,.35,5.5);mesh(new T.SphereGeometry(.4,8,8),mat('#444444'),-21,1,5.5);mesh(new T.SphereGeometry(.45,8,8),mat('#b5533c'),-22.5,.45,19.5);
+mesh(new T.BoxGeometry(.5,.2,6),mat('#7a5230'),-23.6,1.8,12);mesh(new T.PlaneGeometry(.8,1.1),mat('#e8c040'),-12,2.2,20.58).rotation.y=PI;
+mesh(new T.SphereGeometry(.2,8,8),lampM,-12,3.1,12).castShadow=false;
+const hl=new T.PointLight('#ffcf80',0,18);hl.position.set(-12,3,12);sc.add(hl);const tvl=new T.PointLight('#9fc8ff',0,9);tvl.position.set(-3.4,1.6,12);sc.add(tvl);drawTV(0,0);
+// ---- नया: सैलून, टपरी, मंदिर, तालाब, किराना, घर का सामान
+const bx=(w,h,d,c,x,y,z,p)=>mesh(new T.BoxGeometry(w,h,d),mat(c),x,y,z,p);
+const ITEMS=[['आटा','🌾',45,'#e8d9a8'],['चावल','🍚',60,'#f4f0e0'],['दाल','🥣',50,'#e0a020'],['नमक','🧂',10,'#ffffff'],['चीनी','🍬',20,'#f2f2f2'],['चायपत्ती','🍵',30,'#7a3a1a'],['तेल','🛢️',90,'#e8c020'],['साबुन','🧼',12,'#77aacc'],['बिस्कुट','🍪',10,'#c88a3a']];
+let wal=200,bag=[],pantry=0,cupT=0,cutT=0;
+function toast(m){const t=$('toast');t.textContent=m;t.style.opacity=1;clearTimeout(toast.h);toast.h=setTimeout(()=>t.style.opacity=0,2600)}
+function updW(){$('wl').textContent='💰 ₹'+wal+' • 🛍️ थैला: '+bag.length}
+function openShop(){const p=$('shop');p.style.display='block';p.innerHTML='<b>🏪 किराना दुकान</b><span id="sx" style="float:right;cursor:pointer">✖</span><div style="margin-top:8px">'+ITEMS.map((t,i)=>'<button data-i="'+i+'">'+t[1]+' '+t[0]+' ₹'+t[2]+'</button>').join('')+'</div><p id="sm" style="margin:8px 0 0;font-size:13px">पैसे: ₹'+wal+' — सामान घर ले जाकर अलमारी में रखा जाएगा</p>';
+ $('sx').onclick=()=>p.style.display='none';p.querySelectorAll('button').forEach(b=>b.onclick=()=>{const t=ITEMS[+b.dataset.i];if(wal>=t[2]){wal-=t[2];bag.push(+b.dataset.i);updW();$('sm').textContent='पैसे: ₹'+wal+' • थैले में '+bag.length+' चीज़ें'}else toast('💸 पैसे कम हैं!')})}
+function unpack(){for(const i of bag){if(pantry>=20)break;const k=pantry++;mesh(i==6||i==5?new T.CylinderGeometry(.14,.14,.4,8):new T.BoxGeometry(.3,.4,.3),mat(ITEMS[i][3]),-23.5,k<10?2.1:2.75,9.2+(k%10)*.55)}bag=[];updW();toast('🛍️ सामान रसोई की अलमारी में रखा')}
+function haircut(){cutT=T0+5;toast('✂️ कैंची चल रही है...')}
+function drinkChai(){cupT=T0+5;toast('☕ गरमा-गरम कुल्हड़ की चाय — वाह!')}
+function ringBell(){if(AC&&bellP)[880,1320,2430].forEach((f,k)=>osc(f,AC.currentTime,3,.5/(k+1),'sine',bellP));toast('🔔 टन-टन! जय भोलेनाथ 🙏')}
+function sleep(){$('fade').style.opacity=1;setTimeout(()=>{ti=0;applyT();$('fade').style.opacity=0;toast('☀️ सुबह हो गई — नया दिन!')},1400)}
+function study(){toast('📚 पढ़ाई में मन लग गया — दिमाग़ तेज़!')}
+// सैलून (सामने से खुला): x 28..46, z -51..-39
+const tPole=tex(x=>{x.fillStyle='#fff';x.fillRect(0,0,128,128);for(let i=-128;i<256;i+=64){x.fillStyle=i%128?'#2a5bd7':'#c0392b';x.beginPath();x.moveTo(i,0);x.lineTo(i+32,0);x.lineTo(i+160,128);x.lineTo(i+128,128);x.fill()}},1);
+wl(28,-51,18,.4);wl(28,-51,.4,12);wl(45.6,-51,.4,12);flat(18,12,37,-45,new T.MeshStandardMaterial({color:'#cfc9bd',roughness:.7}),.05);bx(19.4,.3,13,'#8a6b45',37,3.6,-45);bx(18,.1,2.2,'#2a5bd7',37,3.1,-38.6).rotation.x=.3;
+const mir=new T.Mesh(new T.PlaneGeometry(5,2.2),new T.MeshStandardMaterial({color:'#bfe3f5',metalness:.9,roughness:.08}));mir.position.set(37,1.9,-50.57);sc.add(mir);bx(5.3,2.5,.1,'#5a3a22',37,1.9,-50.65);
+bx(1.1,.2,1.1,'#111111',37,.8,-44);bx(1.1,1.3,.2,'#111111',37,1.5,-43.4);for(const s of[-1,1])bx(.15,.15,.9,'#222222',37+s*.6,1.1,-44);bx(1,.1,.5,'#444444',37,.35,-45);mesh(new T.CylinderGeometry(.1,.1,.6,8),mat('#bbbbbb',0,.3),37,.5,-44);mesh(new T.CylinderGeometry(.5,.5,.1,12),mat('#222222'),37,.05,-44);
+spots.push({x:37,z:-44,y:.85,face:PI,n:'नाई की कुर्सी',act:'✂️ बाल कटवाएँ',fn:haircut});
+const barber=human('#ffffff','#222222',{cp:'#222222'});barber.position.set(39,0,-44);barber.rotation.y=-PI/2;sc.add(barber);
+bx(3,.4,.8,'#6b4423',42,.5,-49.5);spots.push({x:42,z:-49.4,y:.7,face:0,n:'इंतज़ार की बेंच'});bx(4,.15,.6,'#7a5230',32,1.8,-50.5);for(let i=0;i<5;i++)mesh(new T.CylinderGeometry(.12,.12,.5,8),mat(['#2a9d8f','#e76f51','#e9c46a','#264653','#f4a261'][i]),30.8+i*.6,2.15,-50.5);
+mesh(new T.CylinderGeometry(.25,.25,2.4,12),new T.MeshStandardMaterial({map:tPole,roughness:.4}),27,1.4,-39.5);
+// चाय की टपरी
+bx(2.4,.4,.7,'#6b4423',-16,.5,-22);bx(2.4,.4,.7,'#6b4423',-12,.5,-22);for(const x of[-16,-12])spots.push({x,z:-22,y:.7,face:0,n:'चाय की बेंच',act:'☕ चाय पिएँ',fn:drinkChai});
+mesh(new T.CylinderGeometry(.3,.35,.5,10),mat('#9aa0a6',0,.3),-13,1.25,-19.7);for(let i=0;i<5;i++)mesh(new T.CylinderGeometry(.1,.07,.14,8),mat('#b5651d'),-15.5+i*.25,1.07,-19.7);for(let i=0;i<3;i++)bx(.1,.5,.1,'#e8c020',-10.5+i*.2,2.8,-19.3);
+const steam=[0,1,2].map(()=>emo('💨',.8));
+// मंदिर: घंटी और दीये
+for(const x of[94,100])bx(.25,3,.25,'#8a5a2b',wx(x),2.1,wz(32));bx(6.2,.25,.3,'#8a5a2b',wx(97),3.6,wz(32));mesh(new T.ConeGeometry(.35,.55,10),mat('#d4a017',0,.3),wx(97),3.1,wz(32));
+for(let i=0;i<5;i++)mesh(new T.SphereGeometry(.12,6,6),lampM,wx(93.5+i*2),.75,wz(33.6)).castShadow=false;
+spots.push({x:wx(97),z:wz(33.2),stand:1,lab:'🔔 घंटी बजाएँ (E)',fn:ringBell});
+// किराना काउंटर
+spots.push({x:wx(58),z:wz(58.8),stand:1,lab:'🛒 सामान ख़रीदें (E)',fn:openShop});
+// तालाब और बत्तखें
+const pd=flat(1,1,35,13,dirtM,.04);pd.geometry=new T.CircleGeometry(13,32);const pw=flat(1,1,35,13,new T.MeshStandardMaterial({color:'#3a86c0',roughness:.2,metalness:.1,transparent:true,opacity:.92}),.09);pw.geometry=new T.CircleGeometry(11,32);cir.push([35,13,10.5]);
+for(let i=0;i<14;i++){const a=i*.45;mesh(new T.CylinderGeometry(.03,.03,rn(1,1.8),4),mat('#5a7a2a'),35+Math.cos(a)*11.4,.7,13+Math.sin(a)*11.4)}
+function duck(){const g=new T.Group();mesh(new T.BoxGeometry(.3,.2,.45),mat('#f5f5f5'),0,.2,0,g);mesh(new T.SphereGeometry(.1,6,6),mat('#2f7a3a'),0,.38,.22,g);mesh(new T.BoxGeometry(.06,.03,.1),mat('#f0a020'),0,.36,.34,g);return g}
+for(let i=0;i<4;i++)npc(duck(),35+rn(-4,4),13+rn(-4,4),6,.4);
+// मेरा घर: पंखे, पलंग, सोफ़ा, मोढ़ा, पढ़ाई की मेज़, घड़ी, खिड़कियाँ
+bx(24,.25,.3,'#5a3a22',-12,3.3,12);
+const FAN=[];[-18,-6].forEach(x=>{const g=new T.Group();g.position.set(x,2.9,12);sc.add(g);mesh(new T.CylinderGeometry(.03,.03,.4,4),mat('#333333'),0,.2,0,g);mesh(new T.CylinderGeometry(.2,.2,.15,10),mat('#dddddd'),0,0,0,g);for(let i=0;i<3;i++){const b=bx(1.3,.03,.3,'#d9d2c0',Math.cos(i*2.09)*.75,0,Math.sin(i*2.09)*.75,g);b.rotation.y=-i*2.09}FAN.push(g)});
+bx(2.4,.4,1.7,'#5a3a22',-2.1,.3,5.5);bx(2.3,.2,1.6,'#e8e0cc',-2.1,.6,5.5);bx(.5,.15,1,'#ffffff',-1.3,.75,5.5);bx(1.4,.12,1.62,'#2f5d8a',-2.8,.72,5.5);bx(.15,1,1.8,'#5a3a22',-.6,.8,5.5);
+spots.push({x:-2.4,z:5.5,y:.72,face:-PI/2,n:'पलंग',act:'😴 सो जाएँ',fn:sleep});
+bx(1.5,.5,3,'#8b2c2c',-7.5,.25,17.2);bx(1.3,.2,2.7,'#a63a3a',-7.4,.6,17.2);bx(.35,.9,3,'#8b2c2c',-8.2,1,17.2);bx(1.5,.3,.25,'#7a2323',-7.5,.75,15.8);bx(1.5,.3,.25,'#7a2323',-7.5,.75,18.6);spots.push({x:-7.3,z:17.2,y:.7,face:PI/2,n:'सोफ़ा'});
+mesh(new T.CylinderGeometry(.35,.3,.5,10),mat('#b08a5a'),-4.6,.25,14.4);spots.push({x:-4.6,z:14.4,y:.55,face:PI/2,n:'मोढ़ा'});
+bx(2.4,.1,1.2,'#7a5230',-14,.85,19.8);for(const a of[-1,1])for(const b of[-1,1])bx(.1,.8,.1,'#5a3a22',-14+a*1.1,.4,19.8+b*.5);
+bx(.8,.08,.8,'#5a3a22',-14,.5,18.3);bx(.8,.8,.08,'#5a3a22',-14,.95,17.9);for(const a of[-1,1])for(const b of[-1,1])bx(.06,.5,.06,'#5a3a22',-14+a*.35,.25,18.3+b*.35);
+spots.push({x:-14,z:18.4,y:.55,face:0,n:'पढ़ाई की कुर्सी',act:'📚 पढ़ाई करें',fn:study});
+[['#cc3333',-13],['#3377cc',-12.6],['#33aa77',-12.2]].forEach(([c,x],i)=>bx(.35,.25+i*.05,.45,c,x,1,19.9));mesh(new T.CylinderGeometry(.12,.15,.1,8),mat('#222222'),-15,.95,19.6);mesh(new T.CylinderGeometry(.03,.03,.6,4),mat('#222222'),-15,1.25,19.6);mesh(new T.ConeGeometry(.3,.3,10),lampM,-15,1.6,19.6).castShadow=false;
+bx(1.4,.08,.15,'#ffffff',-4,2.9,3.5);
+flat(5,3.6,-12,8,new T.MeshStandardMaterial({color:'#8b2c2c',roughness:1}),.07);bx(.5,.15,6,'#7a5230',-23.6,2.5,12);
+const win=x=>{bx(1.8,1.4,.06,'#5a3a22',x,2,20.56);const g=mesh(new T.PlaneGeometry(1.6,1.2),new T.MeshStandardMaterial({color:'#9fd0ff',emissive:'#7fb7e6',emissiveIntensity:.5}),x,2,20.52);g.rotation.y=PI;for(const s of[-1,1])bx(.4,1.7,.08,'#c9a227',x+s*1.1,1.9,20.5)};win(-20);win(-5);
+const clf=new T.Mesh(new T.CircleGeometry(.4,24),new T.MeshBasicMaterial({color:'#ffffff'}));clf.position.set(-17,2.7,3.44);sc.add(clf);
+const clk=[.22,.32].map(h=>{const g=new T.Group();g.position.set(-17,2.7,3.47);sc.add(g);bx(.04,h,.02,'#111111',0,h/2,0,g);return g});
+updW();
+// ---- भाग 2: मेला, डाकघर, खेल, मिशन, मौसम
+var MS,mi=0,tvOn=0,wea=0,ride=0,pyy=0,wrot=0,svT=0,bestG=0,hasI=0,balloon=null,rvg=null,rg=null;
+MS=[['गौशाला','ढाबा','गौशाला से दूध लेकर ढाबे पर दीजिए (+₹30)',30],['पाठशाला','शिव मंदिर','मास्टर जी की चिट्ठी पुजारी जी को दीजिए (+₹40)',40],['किसान का घर','नानी का घर','किसान काका की सब्ज़ी नानी को दीजिए (+₹50)',50]];
+MS.forEach((m,k)=>{const P=[[[186,150],[184,37.6],[156,161]][k],[[83,58.8],[92,33.2],[77.5,78.5]][k]];
+ spots.push({x:wx(P[0][0]),z:wz(P[0][1]),stand:1,lab:'📦 सामान उठाएँ (E)',fn(){if(mi==k&&!hasI){hasI=1;toast('📦 सामान ले लिया — '+m[1]+' पहुँचाइए')}else toast('यहाँ अभी कोई काम नहीं')}});
+ spots.push({x:wx(P[1][0]),z:wz(P[1][1]),stand:1,lab:'🤝 सामान दें (E)',fn(){if(mi==k&&hasI){hasI=0;mi++;wal+=m[3];updW();toast('🎉 शाबाश! ₹'+m[3]+' इनाम मिला')}else toast('अभी देने को कुछ नहीं')}})});
+// मेला: x 55..100, z 10..32
+flat(45,22,77.5,21,dirtM,.04);const MX=78,MZ=21,GN=[],BL=[];
+const wheel=new T.Group();wheel.position.set(MX,7.5,MZ);sc.add(wheel);mesh(new T.TorusGeometry(6,.12,6,40),mat('#d94b4b'),0,0,0,wheel);mesh(new T.TorusGeometry(3,.08,6,30),mat('#e8c040'),0,0,0,wheel);
+for(let i=0;i<4;i++)bx(12,.08,.08,'#cccccc',0,0,0,wheel).rotation.z=i*PI/4;
+for(let i=0;i<8;i++){const g=new T.Group(),f=-PI/2+i*PI/4;g.position.set(6*Math.cos(f),6*Math.sin(f),0);wheel.add(g);bx(1.3,1,1,['#e63946','#2a9d8f','#e9c46a','#9b5de5'][i%4],0,-.7,0,g);bx(.05,.4,.05,'#999999',0,-.1,0,g);GN.push(g)}
+for(const s of[-1,1])for(const z of[-.9,.9]){const l=bx(.4,8.6,.4,'#555555',MX+s*2.2,3.9,MZ+z);l.rotation.z=-s*.28}col.push([MX-3.5,MZ-1.5,7,3]);
+spots.push({x:MX,z:MZ+4,stand:1,lab:'🎡 झूला झूलें (E)',fn(){ride=T0+14;sit=null;toast('🎡 ऊपर से पूरा गाँव देखिए!')}});
+const mg=new T.Group();mg.position.set(62,0,27);sc.add(mg);mesh(new T.CylinderGeometry(3,3,.3,16),mat('#8a5a2b'),0,.15,0,mg);mesh(new T.CylinderGeometry(.2,.2,3.4,8),mat('#d4a017'),0,1.7,0,mg);mesh(new T.ConeGeometry(3.4,1.6,16),mat('#e76f51'),0,3.8,0,mg);
+for(let i=0;i<6;i++){const a=i*PI/3;bx(.4,.7,1,['#fff','#e9c46a','#f4a261'][i%3],Math.cos(a)*2.2,1.1,Math.sin(a)*2.2,mg).rotation.y=-a;mesh(new T.CylinderGeometry(.04,.04,2.6,4),mat('#d4a017'),Math.cos(a)*2.2,1.8,Math.sin(a)*2.2,mg)}cir.push([62,27,3.3]);
+const stall=(z,c)=>{bx(1.2,1,3,c,92,.5,z);bx(2.4,.12,3.6,c,91.4,2.7,z).rotation.z=.25;for(const s of[-1,1])bx(.1,2.6,.1,'#5a3a22',92.8,1.3,z+s*1.6)};
+stall(14,'#c0392b');stall(21,'#d8a020');stall(28,'#2a7f62');
+for(let i=0;i<14;i++){const b=mesh(new T.SphereGeometry(.28,8,8),mat(['#e63946','#2a9d8f','#e9c46a','#9b5de5','#f4a261'][i%5]),92+rn(-.6,.6),3.5+rn(0,1),28+rn(-1.3,1.3));b.userData.y=b.position.y;BL.push(b)}
+for(let i=0;i<5;i++)mesh(new T.TorusGeometry(.18,.05,6,12),mat('#e8892a'),92,1.1+i*.08,21+rn(-.5,.5)).rotation.x=PI/2;
+for(let i=0;i<6;i++)mesh(new T.TorusGeometry(.15,.03,6,10),mat(['#e63946','#2a9d8f','#e9c46a'][i%3]),92,1.1+i*.1,14+(i%3)*.4-.4);
+spots.push({x:89.5,z:28,stand:1,lab:'🎈 गुब्बारा लें ₹10 (E)',fn(){if(wal<10)return toast('💸 पैसे कम हैं!');wal-=10;updW();if(!balloon){balloon=new T.Group();mesh(new T.SphereGeometry(.28,10,10),mat(['#e63946','#2a9d8f','#e9c46a','#9b5de5'][Math.floor(Math.random()*4)]),0,.45,.1,balloon);mesh(new T.CylinderGeometry(.01,.01,1.1,4),mat('#ffffff'),0,-.1,.1,balloon);pl.userData.ar[0].add(balloon)}toast('🎈 गुब्बारा मिल गया!')}});
+spots.push({x:89.5,z:21,stand:1,lab:'🥨 जलेबी ₹15 (E)',fn(){if(wal<15)return toast('💸 पैसे कम हैं!');wal-=15;updW();toast('🥨 गरमा-गरम जलेबी — मज़ा आ गया!')}});
+spots.push({x:89.5,z:14,stand:1,lab:'💍 चूड़ियाँ देखें (E)',fn(){toast('💍 रंग-बिरंगी काँच की चूड़ियाँ! (अभी सिर्फ़ देखने को)')}});
+for(const x of[56,98])mesh(new T.CylinderGeometry(.08,.08,5,6),mat('#5a3a22'),x,2.5,11);
+for(let i=0;i<24;i++){const x=56+i*1.83;mesh(new T.ConeGeometry(.25,.5,3),mat(['#e63946','#f4a261','#2a9d8f','#e9c46a','#9b5de5'][i%5]),x,4.7-Math.sin(i/23*PI)*.9,11).rotation.x=PI}
+// डाकघर और पीसीओ
+B(120,18,16,11,3.6,'#e8c9a0',tWall);bx(17,.3,12,'#8a3a2a',wx(128),3.75,wz(23.5));bx(8,1,.2,'#c0392b',wx(128),3,wz(29.1));mesh(new T.CylinderGeometry(.4,.4,1.2,10),mat('#c0392b'),wx(138),.6,wz(30));mesh(new T.SphereGeometry(.4,10,6,0,PI*2,0,PI/2),mat('#c0392b'),wx(138),1.2,wz(30));
+B(142,22,4,4,3,'#f2c230',0,1);bx(3,.6,.1,'#222222',wx(144),2.6,wz(26.05));
+spots.push({x:wx(144),z:wz(27.8),stand:1,lab:'📞 फ़ोन करें ₹1 (E)',fn(){wal=Math.max(0,wal-1);updW();toast('📞 हेलो! हाँ भैया, गाँव से बोल रहा हूँ... आवाज़ आ रही है?')}});
+// पुराने खेल (मैदान)
+function gilli(){const g=bx(.5,.08,.08,'#d4a017',px,1.2,pz),a=rn(.5,1.1),v=rn(8,16),vx=Math.sin(pr)*Math.cos(a)*v,vz=Math.cos(pr)*Math.cos(a)*v,vy=Math.sin(a)*v,x0=px,z0=pz;let t=0;toast('🏏 गिल्ली उछली...');
+ const iv=setInterval(()=>{t+=.04;const y=1.2+vy*t-5*t*t;g.position.set(x0+vx*t,y,z0+vz*t);g.rotation.z=t*20;if(y<.1){clearInterval(iv);const d=Math.round(Math.hypot(vx*t,vz*t));if(d>bestG)bestG=d;toast('🏏 गिल्ली '+d+' मीटर गई! सबसे दूर: '+bestG+' मी');setTimeout(()=>sc.remove(g),2500)}},40)}
+spots.push({x:wx(178),z:wz(58),stand:1,lab:'🏏 गिल्ली-डंडा खेलें (E)',fn:gilli});
+spots.push({x:wx(186),z:wz(58),stand:1,lab:'🔵 कंचे खेलें (E)',fn(){if(Math.random()<.5){wal+=5;updW();toast('🔵 निशाना सही! ₹5 जीते')}else toast('⚪ निशाना चूक गया!')}});
+spots.push({x:wx(194),z:wz(58),stand:1,lab:'🪁 पतंग लड़ाएँ (E)',fn(){if(Math.random()<.5){wal+=10;updW();toast('🪁 वो काट्टा! पतंग काट दी — ₹10 जीते')}else toast('🪁 मांझा ढीला पड़ गया...')}});
+// मौसम: बारिश और कोहरा
+const RN=new T.Points(new T.BufferGeometry(),new T.PointsMaterial({color:'#aaccee',size:.12,transparent:true,opacity:.7}));const rp=new Float32Array(1500);for(let i=0;i<1500;i+=3){rp[i]=rn(-25,25);rp[i+1]=rn(0,18);rp[i+2]=rn(-25,25)}RN.geometry.setAttribute('position',new T.BufferAttribute(rp,3));RN.visible=false;sc.add(RN);
+function rainOn(on){if(!AC)return;if(!rg){const s=AC.createBufferSource();s.buffer=nb;s.loop=true;const f=AC.createBiquadFilter();f.type='lowpass';f.frequency.value=1800;rg=AC.createGain();rg.gain.value=0;s.connect(f);f.connect(rg);rg.connect(master);s.start()}rg.gain.value=on?.12:0}
+$('wb').onclick=()=>{wea=(wea+1)%3;toast(['☀️ साफ़ मौसम','🌧️ बारिश हो रही है','🌫️ घना कोहरा'][wea]);rainOn(wea==1)};
+function save(){try{localStorage.setItem('gaon',JSON.stringify({w:wal,m:mi,b:bestG,s:[...seen]}))}catch(e){}}
+function updW(){$('wl').textContent='💰 ₹'+wal+' • 🛍️ '+bag.length+(MS?(mi<MS.length?' • 🎯 '+MS[mi][2]:' • ✅ सब काम पूरे'):'')}
+// ---- भाग 3: टायर-चक्का, पटाखे, चिड़ियाँ-झींगुर-बिजली की आवाज़ें
+const kid=human('#e9b44c','#335566',{cp:'#222222',s:.65});npc(kid,wx(90),wz(66),25,2.2);
+const tyre=new T.Group(),tyI=mesh(new T.TorusGeometry(.35,.07,6,14),mat('#222222'),0,.35,0,tyre);sc.add(tyre);
+function bang(f,g,d){if(!AC)return;const t=AC.currentTime,s=AC.createBufferSource(),e=AC.createGain(),q=AC.createBiquadFilter();s.buffer=nb;q.type='lowpass';q.frequency.value=f;e.gain.setValueAtTime(g,t);e.gain.exponentialRampToValueAtTime(.001,t+d);s.connect(q);q.connect(e);e.connect(master);s.start(t)}
+function chirp(){const t=AC.currentTime,o=AC.createOscillator(),e=AC.createGain();o.frequency.setValueAtTime(rn(2200,3200),t);o.frequency.exponentialRampToValueAtTime(rn(3200,4200),t+.12);e.gain.setValueAtTime(.04,t);e.gain.exponentialRampToValueAtTime(.001,t+.15);o.connect(e);e.connect(master);o.start(t);o.stop(t+.2)}
+const FWL=[];function burst(x,y,z,c){const n=70,g=new T.BufferGeometry(),p=new Float32Array(n*3),v=[];for(let i=0;i<n;i++){const a=rn(0,6.28),b=rn(-1,1),s=rn(4,9),q=Math.sqrt(1-b*b);v.push(Math.cos(a)*q*s,b*s,Math.sin(a)*q*s);p[i*3]=x;p[i*3+1]=y;p[i*3+2]=z}
+ g.setAttribute('position',new T.BufferAttribute(p,3));const m=new T.Points(g,new T.PointsMaterial({color:c,size:.5,transparent:true,blending:T.AdditiveBlending,depthWrite:false}));sc.add(m);FWL.push({m,v,t:0,p})}
+$('cr').onclick=()=>{toast('🎆 दिवाली के पटाखे!');for(let i=0;i<6;i++)setTimeout(()=>{burst(px+rn(-25,25),rn(16,28),pz+rn(-25,25),['#ff5555','#ffd93d','#55ff99','#66ccff','#ff66ff'][i%5]);bang(900,.5,.4)},i*450)};
+setInterval(()=>{if(!AC)return;if(wea==1){if(Math.random()<.12)bang(300,.8,2.5)}else if(ti<2){if(Math.random()<.5)chirp()}else for(let i=0;i<3;i++)osc(4300,AC.currentTime+i*.12,.06,.03,'sine',master)},700);
+let ltx=0;requestAnimationFrame(function ex(t){requestAnimationFrame(ex);const dt=Math.min(.05,(t-ltx)/1000||0);ltx=t;const a=kid.rotation.y;tyre.position.set(kid.position.x+Math.sin(a)*.7,0,kid.position.z+Math.cos(a)*.7);tyre.rotation.y=a+PI/2;tyI.rotation.z-=dt*4;
+ for(let i=FWL.length-1;i>=0;i--){const f=FWL[i];f.t+=dt;for(let k=0;k<70;k++){f.v[k*3+1]-=9*dt;f.p[k*3]+=f.v[k*3]*dt;f.p[k*3+1]+=f.v[k*3+1]*dt;f.p[k*3+2]+=f.v[k*3+2]*dt}f.m.geometry.attributes.position.needsUpdate=true;f.m.material.opacity=Math.max(0,1-f.t/2.2);if(f.t>2.2){sc.remove(f.m);f.m.geometry.dispose();FWL.splice(i,1)}}});
+// ---- भाग 4: विस्तार, गाड़ियाँ, अंदर के कमरे, डाक, डेयरी, नक्शा
+let cyc=0,veh=null,eatT=0,dk=-1,dkN=0,mapBG=null,lpx=0,lpz=0,pedal=0;const ROOMS=[];
+function rmB(x,y,w,d,h){const X=wx(x+w/2),Z=wz(y+d/2),f=(hh,yy)=>sc.children.find(o=>o.isMesh&&o.geometry.type=='BoxGeometry'&&Math.abs(o.position.x-X)<.02&&Math.abs(o.position.z-Z)<.02&&Math.abs(o.geometry.parameters.height-hh)<.02&&(yy==null||Math.abs(o.position.y-yy)<.02)),m=f(h);if(m)sc.remove(m);
+ const k=col.findIndex(c=>Math.abs(c[0]-wx(x))<.02&&Math.abs(c[1]-wz(y))<.02&&c[2]==w&&c[3]==d);if(k>=0)col.splice(k,1);return f(.3,3.75)}
+function room(x0,z0,w,d,dX,dw,test,fl,roof){const ms=[wl(x0,z0,w,.4),wl(x0,z0,.4,d),wl(x0+w-.4,z0,.4,d),wl(x0,z0+d-.4,dX-dw/2-x0,.4),wl(dX+dw/2,z0+d-.4,x0+w-dX-dw/2,.4)];flat(w,d,x0+w/2,z0+d/2,new T.MeshStandardMaterial({color:fl,roughness:.8}),.07);ROOMS.push({ms,roof,test})}
+// विस्तार: सड़कें और बाहर के पेड़
+flat(26,8,133,-27,dirtM);flat(26,8,-133,-27,dirtM);flat(8,23,8,106.5,dirtM);
+for(let i=0,n=0;i<700&&n<90;i++){const x=rn(-144,144),z=rn(-116,116);if(Math.abs(x)<112&&Math.abs(z)<88)continue;if(Math.abs(z+27)<9||Math.abs(z-40)<8||(Math.abs(x-8)<8&&z>-23)||(x>114&&x<136&&z>-54&&z<-36))continue;tree(x,z,rn(.8,1.4));n++}
+// ढाबा (अंदर बैठकर खाना)
+const rfD=rmB(72,44,22,12,3.6);room(-48,-51,22,12,-37,3,(x,z)=>x>-47.6&&x<-26.4&&z>-50.6&&z<-39.4,'#cdbfa0',rfD);
+const thali=new T.Group();mesh(new T.CylinderGeometry(.35,.3,.04,16),mat('#c0c4c8',0,.3),0,0,0,thali);[[-.15,0,'#e0a020'],[.15,0,'#f4f0e0'],[0,.18,'#4a8a3a']].forEach(([x,z,c])=>mesh(new T.CylinderGeometry(.09,.07,.06,8),mat(c),x,.06,z,thali));mesh(new T.CylinderGeometry(.18,.18,.03,12),mat('#d9a05a'),0,.05,-.18,thali);thali.visible=false;sc.add(thali);
+function eat(tx,tz){if(eatT)return;if(wal<40)return toast('💸 पैसे कम हैं! थाली ₹40 की है');wal-=40;updW();eatT=T0+7;thali.position.set(tx,.95,tz+(sit&&sit.z>tz?.25:-.25));thali.visible=true;toast('🍛 दाल, चावल, गरम रोटी, सब्ज़ी, अचार — वाह!')}
+[-43,-32].forEach(x=>{bx(2.4,.1,1.2,'#7a5230',x,.85,-46);for(const a of[-1,1])for(const b of[-1,1])bx(.1,.8,.1,'#5a3a22',x+a*1.1,.4,-46+b*.5);
+ for(const s of[-1,1]){bx(2.4,.1,.5,'#6b4423',x,.5,-46+s*1.25);spots.push({x,z:-46+s*1.25,y:.58,face:s>0?PI:0,n:'ढाबे की बेंच',act:'🍛 थाली खाएँ ₹40',fn:()=>eat(x,-46)})}});
+mesh(new T.CylinderGeometry(.8,1,1.4,12),mat('#8a4a2a'),-46,.7,-49.3);mesh(new T.SphereGeometry(.3,8,8),lampM,-46,1.5,-49.3).castShadow=false;const cook=human('#ffffff','#333333',{cp:'#ffffff'});cook.position.set(-43.6,0,-49.4);sc.add(cook);label('🍛 थाली ₹40 • रोटी • चाय',-37,3.1,-50.2);
+// डाकघर (अंदर जा सकते हैं)
+const rfP=rmB(120,18,16,11,3.6);room(0,-77,16,11,8,3,(x,z)=>x>.4&&x<15.6&&z>-76.6&&z<-66.4,'#d9cbb0',rfP);
+bx(8,1,.8,'#5a3a22',8,.5,-71);bx(8.4,.1,1,'#7a5230',8,1.05,-71);const clerk=human('#6b8e9b','#333333',{cp:'#c0392b'});clerk.position.set(8,0,-72.4);sc.add(clerk);
+bx(10,2.4,.4,'#5a3a22',8,1.2,-76.7);for(let i=0;i<12;i++)bx(.6,.4,.1,'#f4f0e0',3.8+i*.8,.8+(i%3)*.6,-76.45);bx(.9,.7,.7,'#9a7b4f',1.5,.35,-75.5);bx(.9,.7,.7,'#9a7b4f',14.5,.35,-75.5);bx(3,.4,.7,'#6b4423',4,.5,-67.3);spots.push({x:4,z:-67.3,y:.7,face:PI,n:'डाकघर की बेंच'});
+function takeDak(){if(dk>=0)return toast('📮 पहले वाली डाक पहुँचाइए: '+hn[dk]+' का घर (नक्शे पर देखें)');dk=Math.floor(Math.random()*8);toast('📮 डाक: '+hn[dk]+' के घर पहुँचानी है — नक्शे पर लाल निशान देखिए')}
+spots.push({x:8,z:-69.7,stand:1,lab:'📮 डाक लें (E)',fn:takeDak});
+function knock(i){if(dk===i){dk=-1;dkN++;wal+=60;updW();toast('✉️ डाक पहुँच गई! धन्यवाद — ₹60 इनाम ('+dkN+' डाक पहुँचाई)')}else toast('🚪 '+hn[i]+' घर पर नहीं हैं')}
+hn.forEach((n,i)=>spots.push({x:wx(10+(i%4)*20+7.5),z:i<4?wz(27)+1.6:wz(80)-1.6,stand:1,lab:'✉️ '+n+' का दरवाज़ा खटखटाएँ (E)',fn:()=>knock(i)}));
+// शिव मंदिर (अंदर गर्भगृह)
+rmB(93,19,8,8,4.5);const mroof=bx(8.4,1.8,8.4,'#f3e3c4',-23,4.3,-72);room(-27,-76,8,8,-23,3,(x,z)=>x>-26.6&&x<-19.4&&z>-75.6&&z<-68.4,'#bfb5a0',mroof);
+const SX=-23,SZ=-72;mesh(new T.CylinderGeometry(1.3,1.4,.3,16),mat('#8d8d8d'),SX,.2,SZ-1.8);mesh(new T.CylinderGeometry(.45,.5,1,12),mat('#1c1c1c'),SX,.85,SZ-1.8);mesh(new T.SphereGeometry(.45,12,8,0,PI*2,0,PI/2),mat('#1c1c1c'),SX,1.35,SZ-1.8);
+mesh(new T.CylinderGeometry(.04,.04,2.2,6),mat('#c9a227'),SX+2.5,1.2,SZ-2.8);for(let i=0;i<3;i++)mesh(new T.ConeGeometry(.1,.4,5),mat('#c9a227'),SX+2.3+i*.2,2.4,SZ-2.8);
+for(let i=0;i<8;i++){const a=i*PI/4;mesh(new T.SphereGeometry(.14,6,6),mat('#f5a623'),SX+Math.cos(a)*1.1,.45,SZ-1.8+Math.sin(a)*1.1)}for(let i=0;i<5;i++)mesh(new T.SphereGeometry(.12,6,6),lampM,SX-1.2+i*.6,.45,SZ-.6).castShadow=false;
+const nd=cow('#f5f5f5',.8);nd.position.set(SX-1.8,.07,SZ+.5);nd.rotation.y=PI;sc.add(nd);
+function aarti(){[0,1.2,2.4,3.6].forEach(d=>setTimeout(ringBell,d*1000));toast('🪔 आरती हो रही है — घंटियाँ बज रही हैं 🙏')}
+spots.push({x:SX+1.8,z:SZ+1.2,stand:1,lab:'🪔 आरती करें (E)',fn:aarti});spots.push({x:SX-.2,z:SZ+1.6,stand:1,lab:'🌼 प्रसाद लें (E)',fn(){toast('🙏 प्रसाद मिला — लड्डू और तुलसी का पत्ता')}});
+// डेयरी (x 118..134, z -50..-40)
+bx(16.4,.3,10.4,'#9a8348',126,3.4,-45);for(const x of[118.5,133.5])for(const z of[-49.5,-40.5])bx(.3,3.4,.3,'#5a3a22',x,1.7,z);wl(118,-50,16,.4);bx(6,1,.8,'#7a5230',126,.5,-41.2);
+for(let i=0;i<6;i++)mesh(new T.CylinderGeometry(.3,.3,.9,10),mat('#c9cdd1',0,.3),121+i*1.2,.5,-47.5);const dm1=human('#ffffff','#445566',{cp:'#ffffff'});dm1.position.set(126,0,-42.6);dm1.rotation.y=PI;sc.add(dm1);
+npc(cow('#f1e8d8'),122,-45.5,2,.3);npc(cow('#caa57a'),130,-45.5,2,.3);label('🥛 दूध डेयरी',126,5,-45);ITEMS.push(['दूध','🥛',25,'#ffffff']);
+spots.push({x:126,z:-39.7,stand:1,lab:'🥛 दूध लें ₹25 (E)',fn(){if(wal<25)return toast('💸 पैसे कम हैं!');wal-=25;bag.push(ITEMS.length-1);updW();toast('🥛 ताज़ा दूध थैले में — घर जाकर रखिए')}});
+// बस, बैलगाड़ी, साइकिल
+function mkBus(){const g=new T.Group();bx(3,2.6,9,'#2d6fb7',0,1.7,0,g);bx(3.05,.5,9.05,'#f0a030',0,.9,0,g);bx(3.05,.8,7.6,'#222222',0,2.2,-.3,g);bx(2.9,.9,.1,'#9fd0ff',0,2.2,4.52,g);for(const s of[-1,1]){mesh(new T.SphereGeometry(.2,6,6),lampM,s,1,4.5,g);for(const z of[-2.8,2.8])mesh(new T.CylinderGeometry(.55,.55,.4,12),mat('#111111'),s*1.5,.55,z,g).rotation.z=PI/2}return g}
+function mkCart(){const g=new T.Group();bx(2.2,.2,3.2,'#7a5230',0,1.1,0,g);for(const s of[-1,1]){bx(.1,.5,3.2,'#6b4423',s*1.1,1.45,0,g);mesh(new T.TorusGeometry(.8,.1,6,16),mat('#4a3018'),s*1.2,.85,0,g).rotation.y=PI/2;const b=cow('#e9e2d2',1);b.position.set(s*.6,0,4.2);g.add(b)}bx(.12,.12,4,'#5a3a22',0,1,3,g);return g}
+function mkCyc(){const g=new T.Group();for(const z of[-.55,.55])mesh(new T.TorusGeometry(.4,.04,6,16),mat('#222222'),0,.4,z,g).rotation.y=PI/2;bx(.05,.05,1.1,'#c0392b',0,.75,0,g);bx(.05,.5,.05,'#c0392b',0,.95,-.3,g);bx(.4,.05,.05,'#222222',.0,1.05,.55,g);bx(.2,.06,.35,'#222222',0,1.05,-.3,g);return g}
+const busG=mkBus(),cartG=mkCart(),cycG=mkCyc();busG.position.set(-85,0,-27);busG.rotation.y=PI/2;cartG.position.set(126,0,-29);cartG.rotation.y=-PI/2;cycG.position.set(14,0,-21);cycG.rotation.y=PI/2;sc.add(busG,cartG,cycG);
+function busStop(x,z,t){for(const s of[-1,1])mesh(new T.CylinderGeometry(.1,.1,3,6),mat('#555555'),x+s*2,1.5,z);bx(5,.2,2,'#2a6f9a',x,3.1,z);bx(3,.4,.7,'#7a5230',x,.5,z-.5);label(t,x,4.8,z)}busStop(-85,-33,'🚌 बस स्टॉप');busStop(118,-33,'🚏 बस स्टॉप');
+function board(k,pts){const L=[];for(let i=0;i<pts.length-1;i++)L.push(Math.hypot(pts[i+1][0]-pts[i][0],pts[i+1][1]-pts[i][1]));(k=='bus'?busG:cartG).position.set(pts[0][0],0,pts[0][1]);veh={k,g:k=='bus'?busG:cartG,pts,L,d:0,sp:k=='bus'?14:7,sy:k=='bus'?.2:.45};cyc=0;sit=null;toast(k=='bus'?'🚌 बस चल पड़ी — पों पों!':'🐂 बैलगाड़ी चल पड़ी — घंटियाँ बज रही हैं')}
+const BA=[[-85,-27],[118,-27]],CA=[[126,-27],[8,-27],[8,78]];
+spots.push({x:-85,z:-31,stand:1,lab:'🚌 बस में बैठें (पूर्व तक) (E)',fn:()=>board('bus',BA)},{x:118,z:-31,stand:1,lab:'🚌 बस में बैठें (पश्चिम तक) (E)',fn:()=>board('bus',[BA[1],BA[0]])},{x:126,z:-31.5,stand:1,lab:'🐂 बैलगाड़ी: खेतों तक (E)',fn:()=>board('cart',CA)},{x:11,z:81,stand:1,lab:'🐂 बैलगाड़ी: डेयरी तक (E)',fn:()=>board('cart',[...CA].reverse())});
+const cySp={x:14,z:-21,stand:1,lab:'🚲 साइकिल चलाएँ (E)',fn:mount};spots.push(cySp);
+function mount(){cyc=1;sit=null;toast('🚲 साइकिल पर सवार! तेज़ चलिए — E दबाकर उतरें')}function dismount(){cyc=0;cySp.x=px;cySp.z=pz;cycG.position.set(px,0,pz);cycG.rotation.y=pr;toast('🚲 साइकिल यहाँ खड़ी कर दी')}
+// नक्शा
+const mmx=$('mm').getContext('2d'),mx=x=>(x+146)*.445,mz=z=>(z+118)*.445;$('mm').onclick=()=>$('mm').classList.toggle('big');
+function buildMap(){mapBG=document.createElement('canvas');mapBG.width=130;mapBG.height=105;const c=mapBG.getContext('2d');c.fillStyle='#6fae4f';c.fillRect(0,0,130,105);c.fillStyle='#b59a6a';c.fillRect(0,mz(-31),130,3.6);c.fillRect(mx(4),mz(-23),3.6,105);c.fillStyle='#3d8fd1';c.fillRect(0,mz(35),130,4.5);c.fillStyle='#b59a6a';c.fillRect(mx(4),mz(35),3.6,4.5);
+ for(const p of places){const n=p[0];if(/(चौक|मोहल्ला|नदी|बरगद|पुल|तालाब|स्टॉप)/.test(n))continue;c.fillStyle=n.includes('खेत')?'#d9b94a':(n.includes('मैदान')||n=='मेला')?'#e2cf8a':'#8b4a2b';c.fillRect(mx(p[2]-120),mz(p[3]-95),p[4]*.445,p[5]*.445)}c.fillStyle='#3a86c0';c.beginPath();c.arc(mx(35),mz(13),4.9,0,7);c.fill();c.fillStyle='#1e6fd9';for(const s of BA)c.fillRect(mx(s[0])-3,mz(s[1])-3,6,6)}
+function xh(dt){if(!mapBG)buildMap();
+ for(const r of ROOMS){const i=r.test(px,pz);r.ms.forEach(m=>m.visible=!i);if(r.roof)r.roof.visible=!i}
+ pl.visible=!(veh&&veh.k=='bus');
+ if(veh){veh.d+=veh.sp*dt;let d=veh.d,i=0;while(i<veh.L.length&&d>veh.L[i])d-=veh.L[i++];
+  if(i>=veh.L.length){const e=veh.pts[veh.pts.length-1];veh.g.position.set(e[0],0,e[1]);px=e[0];pz=e[1]+4;veh=null;toast('🚏 आपका स्टॉप आ गया — उतर जाइए!')}
+  else{const a=veh.pts[i],b=veh.pts[i+1],f=d/veh.L[i],x=a[0]+(b[0]-a[0])*f,z=a[1]+(b[1]-a[1])*f,h=Math.atan2(b[0]-a[0],b[1]-a[1]);veh.g.position.set(x,Math.abs(Math.sin(T0*8))*.03,z);veh.g.rotation.y=h;px=x;pz=z;pr=h;sit=null;pl.position.set(px,veh.sy,pz);pl.rotation.y=pr;pl.userData.lg.forEach(l=>l.rotation.x=-1.45);pl.userData.ar.forEach(a=>a.rotation.x=-.5)}}
+ else if(cyc){const sp=Math.hypot(px-lpx,pz-lpz)/Math.max(dt,.001);pedal+=sp*.9*dt;cycG.position.set(px,0,pz);cycG.rotation.y=pr;pl.position.y=.4;pl.userData.lg[0].rotation.x=Math.sin(pedal)*.8;pl.userData.lg[1].rotation.x=-Math.sin(pedal)*.8;pl.userData.ar.forEach(a=>a.rotation.x=-1);sb.style.display='block';sb.textContent='🚲 उतरें (E)';sb.dataset.l='cyc'}
+ else if(sb.dataset.l==='cyc')sb.dataset.l='x';
+ lpx=px;lpz=pz;
+ if(eatT){if(T0<eatT&&sit)pl.userData.ar[1].rotation.x=-1.3+Math.sin(T0*4)*.3;else{eatT=0;thali.visible=false;toast('😋 पेट भर गया — खाना बहुत स्वादिष्ट था!')}}
+ mmx.drawImage(mapBG,0,0);mmx.fillStyle='#ffd93d';mmx.fillRect(mx(busG.position.x)-2,mz(busG.position.z)-2,4,4);
+ if(dk>=0){const hx=wx(10+(dk%4)*20+7.5),hz=dk<4?wz(27):wz(80);mmx.fillStyle=Math.floor(T0*3)%2?'#ff2d2d':'#ffffff';mmx.beginPath();mmx.arc(mx(hx),mz(hz),4,0,7);mmx.fill()}
+ mmx.fillStyle='#fff';mmx.beginPath();mmx.arc(mx(px),mz(pz),3.5,0,7);mmx.fill();mmx.fillStyle='#e53935';mmx.beginPath();mmx.arc(mx(px),mz(pz),2.2,0,7);mmx.fill();mmx.strokeStyle='#e53935';mmx.beginPath();mmx.moveTo(mx(px),mz(pz));mmx.lineTo(mx(px)+Math.sin(pr)*7,mz(pz)+Math.cos(pr)*7);mmx.stroke();
+ if(dk>=0){mmx.fillStyle='rgba(0,0,0,.65)';mmx.fillRect(0,91,130,14);mmx.fillStyle='#fff';mmx.font='10px sans-serif';mmx.fillText('📮 '+hn[dk]+' का घर',4,101)}}
+// जगहों की सूची: [नाम, इमोजी, x, y, चौड़ाई, गहराई, वर्णन]
+const places=[['पंचायत भवन','🏛️',112,42,32,13,'गाँव के फ़ैसले यहीं होते हैं। सरपंच जी की बैठक आज भी यहीं लगती है।'],['पंचायत चौक','🪑',111,56,34,25,'गाँव का दिल! मेले, सभा और त्योहार की रौनक यहीं जमती है।'],['शिव मंदिर','🛕',90,16,14,17,'सुबह-शाम घंटियाँ गूँजती हैं और बताशे का प्रसाद बँटता है।'],['पाठशाला','🏫',170,20,28,15,'टाट-पट्टी पर बैठकर पहाड़े रटे जाते हैं। तिरंगा शान से लहराता है।'],['खेल का मैदान','⚽',170,42,36,21,'झूले, कबड्डी, गिल्ली-डंडा — बचपन की सारी मस्ती यहीं!'],['बड़ा बरगद','🌳',179,79,32,23,'सौ साल पुराना पेड़। नीचे बुज़ुर्ग चौपाल जमाए हैं और ग्रामोफ़ोन पर पुराने गीत बज रहे हैं।'],['किराना दुकान','🏪',48,44,20,12,'नमक, गुड़, साबुन, बिस्कुट — और काउंटर पर रेडियो बज रहा है।'],['ढाबा','🍛',72,44,22,12,'चूल्हे की दाल, तंदूरी रोटी और ठंडी लस्सी। खुशबू दूर तक आती है।'],['चाय की टपरी','☕',102,76,10,8,'कुल्हड़ की अदरक वाली चाय, रेडियो पर पुराने नग़मे।'],['मिठाई की दुकान','🍬',142,76,15,9,'जलेबी, लड्डू, इमरती — देसी घी की ताज़ा मिठाइयाँ!'],['बस स्टैंड','🚌',20,105,26,11,'पुरानी नीली बस शहर जाने को तैयार खड़ी है।'],['मोहल्ला','🏘️',6,34,80,25,'गलियों में रंगोली, दरवाज़ों पर चारपाई और सबको सबकी ख़बर!'],['नदी','🌊',0,130,240,10,'साफ़ बहता पानी। किनारे बच्चे छप-छप करते हैं।'],['लकड़ी का पुल','🌉',124,130,8,10,'नदी पार खेतों तक जाने का पुराना पुल।'],['गेहूँ का खेत','🌾',10,145,50,28,'सुनहरी बालियाँ और बीच में खड़ा बिजूका।'],['सरसों का खेत','🌼',70,145,50,28,'पीली सरसों का समंदर, तितलियाँ मँडरा रही हैं।'],['कुआँ','🪣',134,150,7,7,'पुराना कुआँ — रस्सी-बाल्टी से मीठा पानी खींचिए।'],['किसान का घर','🏡',148,148,17,11,'आँगन में भूसे के ढेर। किसान काका लस्सी पिलाने को तैयार हैं।'],['गौशाला','🐄',175,147,26,15,'गायें जुगाली कर रही हैं और बैलगाड़ी खड़ी है।']];
+places.push(['मेरा घर','🏠',96,98,24,18,'आपका अपना घर! अंदर जाइए, चारपाई पर बैठकर दूरदर्शन देखिए। E दबाकर बैठें या उठें।']);
+places.push(['मेला','🎡',175,105,45,22,'बड़ा झूला, घूमता घोड़ा-झूला, गुब्बारे, जलेबी और चूड़ियों के ठेले, झंडियाँ! झूले पर बैठकर पूरा गाँव देखिए।'],['डाकघर','📮',120,18,16,11,'लाल डिब्बे में चिट्ठियाँ डाली जाती हैं। डाकिया साइकिल से गाँव-गाँव घूमता है।'],['पीसीओ','📞',142,22,4,4,'एसटीडी पीसीओ बूथ — एक रुपए में शहर बात कीजिए।']);
+places.push(['सैलून','💈',148,44,18,12,'नाई की कुर्सी पर बैठिए, F दबाइए और बाल कटवाइए। आईने के सामने नया लुक पाइए!'],['डेयरी','🥛',238,45,16,10,'गाँव की दूध डेयरी। काउंटर पर E दबाकर ताज़ा दूध लीजिए, बगल में गायें बँधी हैं।'],['बस स्टॉप (पश्चिम)','🚌',31,62,10,12,'बस यहाँ से पूरब के स्टॉप तक जाती है। E दबाकर बैठिए।'],['बस स्टॉप (पूर्व)','🚏',238,62,10,12,'पूर्वी स्टॉप। यहाँ से बस वापस पश्चिम जाती है और बैलगाड़ी खेतों तक।'],['तालाब','🦆',143,96,24,24,'शांत तालाब, किनारे सरकंडे और तैरती बत्तखें।']);
+hn.forEach((n,i)=>places.push([n+' का घर','🏠',10+(i%4)*20,i<4?15:80,15,12,'मिट्टी की ख़ुशबू वाला घर — बाहर चारपाई और मटका रखा है।']));
+const free=(x,z)=>{const X=x+120,Z=z+95;if(Math.abs(Z-68)<8||(Math.abs(X-128)<8&&Z>72)||Math.hypot(X-128,Z-68)<22||(Z>126&&Z<145))return 0;return places.every(p=>X<p[2]-4||X>p[2]+p[4]+4||Z<p[3]-4||Z>p[3]+p[5]+4)};
+for(let i=0,n=0;i<900&&n<75;i++){const x=rn(-112,112),z=rn(-88,88);if(free(x,z)){tree(x,z,rn(.8,1.4));n++}}
+const dm=new T.Object3D(),tf=new T.InstancedMesh(new T.ConeGeometry(.12,.55,4),new T.MeshStandardMaterial({color:'#4f8a33'}),1200),fw=new T.InstancedMesh(new T.SphereGeometry(.09,5,4),new T.MeshStandardMaterial({color:'#ffffff'}),300);
+let ta=0,tb=0;for(let i=0;i<3000&&(ta<1200||tb<300);i++){const x=rn(-115,115),z=rn(-92,92);if(!free(x,z)||Math.hypot(x-35,z-13)<15)continue;dm.rotation.set(0,rn(0,6),0);dm.scale.setScalar(rn(.7,1.5));
+ if(ta<1200){dm.position.set(x,.25,z);dm.updateMatrix();tf.setMatrixAt(ta++,dm.matrix)}else{dm.position.set(x,.35,z);dm.updateMatrix();fw.setMatrixAt(tb,dm.matrix);fw.setColorAt(tb,new T.Color(['#ff6b6b','#ffd93d','#ffffff','#c77dff','#ff9f1c'][tb%5]));tb++}}
+tf.count=ta;fw.count=tb;sc.add(tf,fw);
+const BIG=['नदी','पुल','मोहल्ला','गेहूँ का खेत','सरसों का खेत','खेल का मैदान','पंचायत चौक'];
+const LB=places.map(p=>{const h=p[0].includes('का घर')&&p[0]!=='किसान का घर',s=label(p[0],wx(p[2]+p[4]/2),h?6.8:BIG.some(k=>p[0].includes(k))?4:9.5,wz(p[3]+p[5]/2));s.userData.h=h;return s});
+// ---- चलते-फिरते लोग और जानवर
+const H=(a,b,o,x,y,r,s)=>npc(human(a,b,o),wx(x),wz(y),r,s);
+H('#77aa44','#eee',{f:1,cp:'#111',sk:'#b98058'},96,84,6);H('#cc33aa','#fff',{f:1,cp:'#111'},175,62,8);H('#445566','#ddd',{tb:1,cp:'#cccccc',s:.7},183,50,9);H('#cc8844','#eee',{cp:'#222',s:.65},192,58,9);H('#aa3333','#ddd',{cp:'#222',s:.7},198,48,8);
+H('#eeeeee','#ddd',{cp:'#222',sk:'#a9744a'},182,30,6);H('#ffffff','#e8e0cc',{tb:1,cp:'#bb2222'},60,60,6);H('#5588aa','#ccc',{tb:1,cp:'#e0a020'},82,60,7);H('#997755','#ccc',{tb:1,cp:'#c0392b'},40,157,12);H('#ee88aa','#dd6666',{f:1,cp:'#111'},90,160,14);
+H('#dddddd','#bbb',{cp:'#333'},38,120,6);H('#aa6644','#ccc',{tb:1,cp:'#224444'},128,68,12);H('#dd7777','#aa3355',{f:1,cp:'#111'},140,68,10);H('#ffffff','#eee',{tb:1,cp:'#e0e0e0',bd:1,s:.9},108,72,5);H('#aa8855','#ddd',{tb:1,cp:'#c0392b'},152,81,5);H('#eeeecc','#bbb',{cp:'#222',s:.6},105,60,8);
+for(const[x,y,r]of[[182,153,6],[190,155,6],[196,152,5]])npc(cow(rn(0,1)>.5?'#f1e8d8':'#caa57a'),wx(x),wz(y),r,.5);
+for(const[x,y]of[[20,96],[60,96],[80,74],[150,70],[118,100]])npc(hen(),wx(x),wz(y),4,.7);
+// ---- खिलाड़ी, लालटेन, जुगनू
+const pl=human('#f4ecd8','#e9e1cb',{tb:1,cp:'#c0392b'});sc.add(pl);
+const cup=mesh(new T.CylinderGeometry(.08,.06,.12,8),mat('#b5651d'),0,-.68,.12,pl.userData.ar[1]);cup.visible=false;
+const cape=mesh(new T.ConeGeometry(.7,1.3,12,1,true),new T.MeshStandardMaterial({color:'#ffffff',side:T.DoubleSide}),0,.95,0,pl);cape.visible=false;
+const lant=new T.PointLight('#ffb347',0,20);lant.position.set(.5,1.2,.3);pl.add(lant);mesh(new T.CylinderGeometry(.08,.08,.22,6),lampM,.5,1.1,.3,pl).castShadow=false;
+const fl=new T.Points(new T.BufferGeometry(),new T.PointsMaterial({color:'#ffe680',size:.3,transparent:true,blending:T.AdditiveBlending,depthWrite:false}));const fp=new Float32Array(450);for(let i=0;i<450;i+=3){fp[i]=rn(-60,60);fp[i+1]=rn(.5,4);fp[i+2]=rn(-60,60)}fl.geometry.setAttribute('position',new T.BufferAttribute(fp,3));sc.add(fl);
+function applyT(){const p=PS[ti];sky.material.uniforms.t.value.set(p.t);sky.material.uniforms.b.value.set(p.b);sc.fog.color.set(p.f);sun.color.set(p.s);sun.intensity=p.si;hemi.intensity=p.hi;sd.set(...p.d).normalize();lampM.emissiveIntensity=p.l;lant.intensity=ti==2?1.6:ti==1?.5:0;fl.visible=ti>0;$('tm').textContent='🕰️ '+p.n+' (बदलें)'}
+$('tm').onclick=()=>{ti=(ti+1)%3;applyT()};$('fl').onclick=()=>document.body.classList.toggle('off');applyT();
+// ---- आवाज़: पुराने ज़माने का रेडियो (मौलिक धुन) + आपके अपने गाने
+let AC,bus,master,syn=true,aud,nt=0,st=0,nb,bellP,pl2=[],fi=0;
+const sp=(n,x,y,z)=>n.positionX?(n.positionX.value=x,n.positionY.value=y,n.positionZ.value=z):n.setPosition(x,y,z);
+const SCL=[0,1,3,5,7,8,10],MEL=[4,5,6,5,4,3,2,3,4,6,7,6,5,4,5,4,3,4,5,4,3,2,1,2,3,2,1,0,1,2,0,null],fq=d=>130.8*Math.pow(2,(12*Math.floor(d/7)+SCL[((d%7)+7)%7])/12);
+function initAudio(){if(AC)return;AC=new(window.AudioContext||window.webkitAudioContext)();master=AC.createGain();master.connect(AC.destination);bus=AC.createGain();
+ const hp=AC.createBiquadFilter();hp.type='highpass';hp.frequency.value=220;const lp=AC.createBiquadFilter();lp.type='lowpass';lp.frequency.value=3200;bus.connect(hp);hp.connect(lp);
+ const mk=(x,y,z)=>{const p=AC.createPanner();p.panningModel='equalpower';p.distanceModel='inverse';p.refDistance=5;p.rolloffFactor=1.6;p.maxDistance=200;sp(p,x,y,z);p.connect(master);return p};
+ RX.forEach(r=>lp.connect(mk(r[0],1.8,r[1])));bellP=mk(wx(97),6,wz(23));
+ nb=AC.createBuffer(1,AC.sampleRate,AC.sampleRate);const d=nb.getChannelData(0);for(let i=0;i<d.length;i++)d[i]=Math.random()*2-1;
+ nt=AC.currentTime+.1;setInterval(sched,150)}
+function osc(f,t,d,g,ty,dst){const o=AC.createOscillator(),e=AC.createGain();o.type=ty;o.frequency.value=f;e.gain.setValueAtTime(0,t);e.gain.linearRampToValueAtTime(g,t+.03);e.gain.exponentialRampToValueAtTime(.001,t+d);o.connect(e);e.connect(dst);o.start(t);o.stop(t+d+.05)}
+function noise(t,d,g,fr){const s=AC.createBufferSource(),e=AC.createGain(),f=AC.createBiquadFilter();s.buffer=nb;f.type='highpass';f.frequency.value=fr;e.gain.setValueAtTime(g,t);e.gain.exponentialRampToValueAtTime(.001,t+d);s.connect(f);f.connect(e);e.connect(bus);s.start(t,Math.random()*.5,d+.01)}
+function sched(){if(!rvg){const s=AC.createBufferSource();s.buffer=nb;s.loop=true;const f=AC.createBiquadFilter();f.type='lowpass';f.frequency.value=500;rvg=AC.createGain();rvg.gain.value=0;s.connect(f);f.connect(rvg);rvg.connect(master);s.start()}
+ while(nt<AC.currentTime+.5){const i=st%32,n=MEL[i];
+ if(syn){if(n!==null){osc(fq(n),nt,.34,.12,'sawtooth',bus);osc(fq(n)*1.005,nt,.34,.08,'sawtooth',bus)}
+  if(i%4==0){osc(130.8,nt,1.1,.1,'sine',bus);osc(196,nt+.02,1.1,.06,'sine',bus)}
+  if(i%8==0||i%8==5){osc(110,nt,.16,.25,'sine',bus);noise(nt,.08,.12,300)}else if(i%2==1)noise(nt,.04,.07,3500)}
+ if(Math.random()<.18)noise(nt,.015,.05,2500);
+ if(tvOn&&n!==null&&i%2==0)osc(fq(n)*2,nt,.25,.05,'square',master);
+ if(ti<2&&wea!=1&&Math.random()<.12){const f=2400+Math.random()*1500;osc(f,nt,.07,.03,'sine',master);osc(f*1.2,nt+.1,.07,.03,'sine',master)}
+ if(ti==2&&Math.random()<.5){osc(4300,nt,.04,.015,'sine',master);osc(4300,nt+.08,.04,.015,'sine',master)}
+ if(ti==0&&Math.random()<.01)[500,700,600,800].forEach((f,k)=>osc(f,nt+k*.25,.3,.06,'sawtooth',master));
+ if(wea==1&&Math.random()<.01)noise(nt,1.2,.6,60);
+ if(i==0&&st%64==0)[880,1320,2430].forEach((f,k)=>osc(f,nt,3,.35/(k+1),'sine',bellP));
+ nt+=.3;st++}}
+$('go').onclick=()=>{$('st').style.display='none';initAudio();try{const u=new SpeechSynthesisUtterance('यह आकाशवाणी है। आप सुन रहे हैं पुराने नग़मे।');u.lang='hi-IN';u.rate=.9;speechSynthesis.speak(u)}catch(e){}};
+$('mu').onclick=()=>{if(!AC)return;const m=master.gain.value>0;master.gain.value=m?0:1;$('mu').textContent=m?'🔇 आवाज़':'🔊 आवाज़'};
+$('fi').onchange=e=>{initAudio();pl2=[...e.target.files];if(!pl2.length)return;syn=false;if(!aud){aud=new Audio();AC.createMediaElementSource(aud).connect(bus);aud.onended=()=>{fi=(fi+1)%pl2.length;aud.src=URL.createObjectURL(pl2[fi]);aud.play()}}fi=0;aud.src=URL.createObjectURL(pl2[0]);aud.play()};
+// ---- नियंत्रण
+const keys={};let jx=0,jy=0,ja=0,yaw=0,ph=.3,D=7,dr=0,lx=0,ly=0;
+onkeydown=e=>{keys[e.key.toLowerCase()]=1;if(e.key.toLowerCase()=='m')$('mu').click();if(e.key.toLowerCase()=='e')toggleSit();if(e.key.toLowerCase()=='f'&&sit&&sit.fn)sit.fn()};onkeyup=e=>keys[e.key.toLowerCase()]=0;
+$('c').onpointerdown=e=>{dr=1;lx=e.clientX;ly=e.clientY};onpointerup=()=>dr=0;
+onpointermove=e=>{if(dr){yaw-=(e.clientX-lx)*.006;ph=Math.max(.05,Math.min(1.2,ph+(e.clientY-ly)*.004));lx=e.clientX;ly=e.clientY}};
+onwheel=e=>{D=Math.max(3,Math.min(14,D+e.deltaY*.01))};
+const joy=$('joy'),kn=$('knob');function jm(e){const b=joy.getBoundingClientRect(),dx=e.clientX-b.left-60,dy=e.clientY-b.top-60,m=Math.min(50,Math.hypot(dx,dy)),a=Math.atan2(dy,dx);jx=Math.cos(a)*m/50;jy=Math.sin(a)*m/50;kn.style.transform=`translate(${jx*40}px,${jy*40}px)`}
+joy.onpointerdown=e=>{ja=1;joy.setPointerCapture(e.pointerId);jm(e)};joy.onpointermove=e=>{if(ja)jm(e)};joy.onpointerup=joy.onpointercancel=()=>{ja=0;jx=jy=0;kn.style.transform=''};
+function blk(x,z){if(Math.abs(x)>146||Math.abs(z)>118)return 1;const r=.45;if(Math.abs(z-40)<5.4&&!(x>4.5&&x<11.5))return 1;
+ for(const c of col)if(x+r>c[0]&&x-r<c[0]+c[2]&&z+r>c[1]&&z-r<c[1]+c[3])return 1;for(const c of cir)if(Math.hypot(x-c[0],z-c[1])<c[2]+r)return 1;return 0}
+let sit=null,ya=0;const sb=$('sb');
+function nearSpot(){let b=null,bd=2.4;for(const s of spots){const d=Math.hypot(s.x-px,s.z-pz);if(d<bd){bd=d;b=s}}return b}
+function toggleSit(){if(cyc){dismount();return}if(veh)return;if(sit){sit=null;return}const s=nearSpot();if(!s)return;if(s.stand){s.fn();return}sit=s;px=s.x;pz=s.z;pr=s.face;ya=1.2}
+sb.onclick=toggleSit;const ab=$('ab');ab.onclick=()=>{if(sit&&sit.fn)sit.fn()};
+const seen=new Set();let cur=null,px=8,pz=wz(77),pr=0,wt=0,last=0,T0=0;
+const notes=RX.map(r=>[0,1].map(k=>({s:emo('🎵',1.1),x:r[0],z:r[1],k})));
+function upd(){$('cnt').textContent='खोजा: '+seen.size+'/'+places.length+(seen.size==places.length?' 🎉 पूरा गाँव घूम लिया!':'')}upd();
+try{const sv=JSON.parse(localStorage.getItem('gaon')||'{}');if(sv.w!=null){wal=sv.w;mi=sv.m||0;bestG=sv.b||0;(sv.s||[]).forEach(n=>seen.add(n));updW();upd()}}catch(e){}
+function loop(t){requestAnimationFrame(loop);const dt=Math.min(.05,(t-last)/1000||0);last=t;T0+=dt;
+ const up=(keys.w||keys.arrowup?1:0)-(keys.s||keys.arrowdown?1:0)-jy,rt=(keys.d||keys.arrowright?1:0)-(keys.a||keys.arrowleft?1:0)+jx;
+ let vx=-Math.sin(yaw)*up+Math.cos(yaw)*rt,vz=-Math.cos(yaw)*up-Math.sin(yaw)*rt;const m=Math.hypot(vx,vz);if(m>1){vx/=m;vz/=m}
+ if(sit&&m>.25)sit=null;const spd=(cyc?9:keys.shift?7:3.8)*dt;if(!sit){if(!blk(px+vx*spd,pz))px+=vx*spd;if(!blk(px,pz+vz*spd))pz+=vz*spd}
+ const mv=Math.min(1,m);if(mv>.05){const a=Math.atan2(vx,vz);let d=a-pr;d=Math.atan2(Math.sin(d),Math.cos(d));pr+=d*Math.min(1,dt*12)}wt+=dt*(keys.shift?12:8)*mv;
+ if(sit){pl.position.set(px,sit.y-.75,pz);pl.rotation.y=pr;pl.userData.lg.forEach(l=>l.rotation.x=-1.45);pl.userData.ar.forEach(a=>a.rotation.x=-.4);if(ya>0){ya-=dt;let d=sit.face+PI-yaw;d=Math.atan2(Math.sin(d),Math.cos(d));yaw+=d*Math.min(1,dt*3)}}else{ya=0;pl.position.set(px,0,pz);pl.rotation.y=pr;walk(pl,wt,mv)}
+ xh(dt);const ins=px>-23.6&&px<-.4&&pz>3.4&&pz<20.6;hRoof.visible=!ins;hl.intensity=ins?1.3:ti==2?.5:0;tvl.intensity=ins?.5+Math.random()*.25:0;if(ins!==wasIn){wasIn=ins;drawTV(T0,ins)}else if(ins)drawTV(T0,1);
+ const ns=sit?null:nearSpot(),lab=sit?'🧍 उठें (E)':ns?(ns.lab||'🪑 '+ns.n+' पर बैठें (E)'):'';const al=sit&&sit.act||'';if(al!==ab.dataset.l){ab.dataset.l=al;ab.textContent=al+' (F)';ab.style.display=al?'block':'none'}if(lab!==sb.dataset.l){sb.dataset.l=lab;sb.textContent=lab;sb.style.display=lab?'block':'none'}
+ for(const n of NP){n.w-=dt;if(n.w<=0){n.w=rn(2,6);n.tx=n.hx+rn(-1,1)*n.r;n.tz=n.hz+rn(-1,1)*n.r}const ex=n.tx-n.g.position.x,ez=n.tz-n.g.position.z,d=Math.hypot(ex,ez),mo=d>.3?1:0;
+  if(mo){n.g.position.x+=ex/d*n.sp*dt;n.g.position.z+=ez/d*n.sp*dt;let a=Math.atan2(ex,ez)-n.g.rotation.y;a=Math.atan2(Math.sin(a),Math.cos(a));n.g.rotation.y+=a*Math.min(1,dt*6)}n.ph+=dt*6*mo;walk(n.g,n.ph,mo);if(!n.g.userData.lg)n.g.position.y=mo?Math.abs(Math.sin(n.ph))*.04:0}
+ SW.forEach((s,i)=>s.rotation.x=Math.sin(T0*1.6+i)*.5);KT.forEach((k,i)=>{k.position.x+=Math.sin(T0*.7+i)*.01;k.position.y+=Math.sin(T0*1.3+i)*.012;k.rotation.y=Math.sin(T0+i)*.4});
+ disc.rotation.y=T0*3;tWater.offset.x+=dt*.03;
+ FAN.forEach(f=>f.rotation.y=T0*6);tPole.offset.y=-T0*.3;
+ const dn=new Date();clk[0].rotation.z=-((dn.getHours()%12)+dn.getMinutes()/60)/12*2*PI;clk[1].rotation.z=-dn.getMinutes()/60*2*PI;
+ steam.forEach((s,i)=>{const f=(T0*.4+i/3)%1;s.position.set(-13+Math.sin(f*5+i)*.2,2.2+f*1.6,-19.7);s.material.opacity=.7*(1-f)});
+ const cw=!!sit&&T0<cupT,cs=!!sit&&T0<cutT;cup.visible=cw;cape.visible=cs;if(cw)pl.userData.ar[1].rotation.x=-1.2+Math.sin(T0*3)*.15;
+ if(cs){barber.userData.ar[1].rotation.x=-1.2+Math.sin(T0*12)*.5;barber.userData.ar[0].rotation.x=-.4}else{barber.userData.ar[1].rotation.x=0;barber.userData.ar[0].rotation.x=0}
+ if(cupT&&T0>=cupT){cupT=0;toast('☕ चाय ख़त्म — मज़ा आ गया!')}
+ if(cutT&&T0>=cutT){cutT=0;pl.children[2].material=mat(['#222222','#c0392b','#1d4ed8','#f4a261'][Math.floor(Math.random()*4)]);toast('💇 बाल कट गए — नया लुक मुबारक!')}
+ if(ins&&bag.length)unpack();
+ wrot=T0*.35;wheel.rotation.z=wrot;GN.forEach(g=>g.rotation.z=-wrot);mg.rotation.y=T0*.8;BL.forEach((b,i)=>b.position.y=b.userData.y+Math.sin(T0*2+i)*.1);
+ tvOn=ins?1:0;sun.intensity=PS[ti].si*(wea==1?.5:1);sc.fog.near=[40,18,4][wea];sc.fog.far=[220,110,55][wea];
+ RN.visible=wea==1;if(wea==1){const a=RN.geometry.attributes.position;for(let i=0;i<a.count;i++){a.array[i*3+1]-=dt*14;if(a.array[i*3+1]<0)a.array[i*3+1]=18}a.needsUpdate=true;RN.position.set(px,0,pz)}
+ if(T0<ride){const a=wrot-PI/2;sit=null;px=MX+6*Math.cos(a);pz=MZ;pyy=7.5+6*Math.sin(a)-1.3;pl.position.set(px,pyy,pz);pl.rotation.y=PI;pl.userData.lg.forEach(l=>l.rotation.x=-1.45)}else{if(ride){ride=0;px=MX;pz=MZ+4}pyy=0}
+ if(rvg)rvg.gain.value=Math.max(0,.07*(1-Math.abs(pz-40)/45));if(T0-svT>3){svT=T0;save()}
+ notes.forEach((a,i)=>a.forEach(n=>{const f=(T0*.5+n.k*.5+i*.2)%1;n.s.position.set(n.x+Math.sin(f*6+n.k)*.4,2.6+f*3,n.z);n.s.material.opacity=1-f;n.s.visible=!!AC&&(syn||!!aud)}));
+ const p=fl.geometry.attributes.position;for(let i=0;i<p.count;i++){p.array[i*3+1]+=Math.sin(T0*2+i)*.004;p.array[i*3]+=Math.cos(T0+i)*.004}p.needsUpdate=true;fl.position.set(px,0,pz);
+ let b=null,ba=1e9;for(const q of places){const X=px+120,Z=pz+95;if(X>q[2]-4&&X<q[2]+q[4]+4&&Z>q[3]-4&&Z<q[3]+q[5]+4){const a=q[4]*q[5];if(a<ba){ba=a;b=q}}}
+ if(b!==cur){cur=b;const cd=$('card');if(b){$('ct').textContent=b[1]+' '+b[0];$('cp').textContent=b[6];cd.style.display='block';if(!seen.has(b[0])){seen.add(b[0]);upd()}}else cd.style.display='none'}
+ const cp=Math.cos(ph);cam.position.set(px+Math.sin(yaw)*cp*D,1.6+pyy+Math.sin(ph)*D,pz+Math.cos(yaw)*cp*D);if(ins){cam.position.x=Math.max(-23.2,Math.min(-.8,cam.position.x));cam.position.z=Math.max(3.8,Math.min(20.2,cam.position.z));cam.position.y=Math.min(cam.position.y,3.1)}cam.lookAt(px,1.6+pyy,pz);
+ sky.position.copy(cam.position);sunM.position.copy(cam.position).addScaledVector(sd,340);sun.position.set(px,0,pz).addScaledVector(sd,70);sun.target.position.set(px,0,pz);
+ LB.forEach(s=>s.visible=Math.hypot(s.position.x-px,s.position.z-pz)<(s.userData.h?30:55));
+ if(AC){const L=AC.listener,fx=-Math.sin(yaw),fz=-Math.cos(yaw);L.positionX?(L.positionX.value=px,L.positionY.value=1.6,L.positionZ.value=pz,L.forwardX.value=fx,L.forwardY.value=0,L.forwardZ.value=fz,L.upX.value=0,L.upY.value=1,L.upZ.value=0):(L.setPosition(px,1.6,pz),L.setOrientation(fx,0,fz,0,1,0))}
+ ren.render(sc,cam)}
+requestAnimationFrame(loop);
+</script></body></html>
